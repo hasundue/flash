@@ -1,3 +1,3 @@
 # flash
 
-Framework for building cloud service APIs efficiently with Denoflare
+A framework to build cloud service APIs in a flash with Denoflare

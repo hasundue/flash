@@ -1,5 +1,5 @@
 {
   "tasks": {
-    "test": "deno test"
+    "test": "deno test --allow-write --allow-run --allow-net"
   }
 }

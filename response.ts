@@ -1,7 +1,4 @@
-import {
-  Status,
-  STATUS_TEXT,
-} from "https://deno.land/std@0.144.0/http/http_status.ts";
+import { Status, STATUS_TEXT } from "./deps.ts";
 
 /** Converts an object literal to a JSON string and returns
  * a Response with `application/json` as the `content-type`.

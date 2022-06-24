@@ -1,4 +1,4 @@
-import { ResponseObject, WorkerHandler, WorkerHandlerArgs } from "../mod.ts";
+import { ResponseObject, WorkerHandler, WorkerHandlerArgs } from "./mod.ts";
 
 export type Routes = {
   [path: string]: MethodRoutes | RouterHandler | ResponseObject;

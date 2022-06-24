@@ -1,12 +1,9 @@
-import { Router, Routes } from "./router/mod.ts";
-import { json } from "./response/mod.ts";
+import { Router, Routes } from "./router.ts";
+import { json } from "./response.ts";
 
-import type {
-  IncomingRequestCf,
-  ModuleWorkerContext,
-} from "https://pax.deno.dev/skymethod/denoflare@v0.5.2/common/cloudflare_workers_types.d.ts";
+import type { IncomingRequestCf, ModuleWorkerContext } from "./deps.ts";
 
-type ModuleWorkerEnv = Record<string, unknown>;
+export type ModuleWorkerEnv = Record<string, unknown>;
 
 export interface Worker {
   fetch: (

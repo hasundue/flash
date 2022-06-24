@@ -3,7 +3,7 @@ import { assertObjectMatch } from "https://deno.land/std@0.144.0/testing/asserts
 
 Deno.test("router", async () => {
   const proc = Deno.run({
-    cmd: ["denoflare", "serve", "./example.ts"],
+    cmd: ["denoflare", "serve", "./examples/router.ts"],
     stdout: "piped",
   });
 

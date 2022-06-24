@@ -1,4 +1,4 @@
-import { flash } from "./mod.ts";
+import { flash } from "../mod.ts";
 
 export default flash({
   "/": { message: "Flash Demo" },

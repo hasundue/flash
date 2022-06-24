@@ -4,6 +4,10 @@ on:
   push:
     branches: [ main ]
 
+env:
+  account_id: ${{ secrets.ACCOUNT_ID }}
+  api_token: ${{ secrets.API_TOKEN }}
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -32,3 +36,16 @@ jobs:
           bodyFile: 'CHANGELOG.md'
           draft: false
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Denoflare
+        if: ${{ success() && env.account_id != '' && env.api_token != '' }} 
+        run: >
+          deno install --unstable --allow-read --allow-net --allow-env --allow-run --name denoflare --force 
+          https://raw.githubusercontent.com/skymethod/denoflare/v0.5.2/cli/cli.ts
+
+      - name: Deploy Demo
+        if: ${{ success() }}
+        run: >
+          denoflare push flash-demo
+          --account-id ${{ secrets.ACCOUNT_ID }}
+          --api-token ${{ secrets.API_TOKEN }}

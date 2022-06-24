@@ -9,7 +9,12 @@ env:
   api_token: ${{ secrets.API_TOKEN }}
 
 jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+
   release:
+    needs: test
+
     runs-on: ubuntu-latest
 
     steps:

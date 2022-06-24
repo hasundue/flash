@@ -6,7 +6,11 @@ on:
 
 jobs:
   deploy:
-    if: ${{ secrets && secrets.ACCOUNT_ID != '' && secrets.API_TOKEN != '' }} 
+    env:
+      account_id: ${{ secrets.ACCOUNT_ID }}
+      api_token: ${{ secrets.API_TOKEN }}
+
+    if: ${{ env.account_id != '' && env.api_token != '' }} 
 
     runs-on: ubuntu-latest
 

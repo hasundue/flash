@@ -44,7 +44,7 @@ jobs:
           https://raw.githubusercontent.com/skymethod/denoflare/v0.5.2/cli/cli.ts
 
       - name: Deploy Demo
-        if: ${{ success() }}
+        if: ${{ success() && !cancelled() }}
         run: >
           denoflare push flash-demo
           --account-id ${{ secrets.ACCOUNT_ID }}

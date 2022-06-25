@@ -1,12 +1,6 @@
 import type { IncomingRequestCf, ModuleWorkerContext } from "./deps.ts";
 
-import {
-  MethodRoutes,
-  Router,
-  RouterHandler,
-  RouterHandlerArgs,
-  Routes,
-} from "./router.ts";
+import { Router, Routes } from "./router.ts";
 import { json } from "./response.ts";
 
 export type {

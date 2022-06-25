@@ -47,7 +47,7 @@ function isRouterHandler(
 
 function createWorkerHandler(
   obj: RouterHandler | ResponseObject,
-  params: PathParams | undefined,
+  params?: PathParams,
 ): WorkerHandler {
   return (request, env, context) =>
     isRouterHandler(obj)
@@ -99,6 +99,6 @@ export class Router {
       `${request.method} ${pathname + search} ${Date.now() - startTime}ms`,
     );
 
-    return createWorkerHandler(this.routes[404], {});
+    return createWorkerHandler(this.routes[404]);
   }
 }

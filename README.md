@@ -34,3 +34,8 @@ And run with Denoflare!
 ```sh
 denoflare serve index.ts
 ```
+
+## Acknowledgment
+
+Development of **flash** is supported by
+[Active Connector Inc.](https://active-connector.com).

@@ -7,34 +7,46 @@ Flash is a framework to build REST APIs efficiently with
 > :warning: Do not use Flash for production use yet, unless you are a
 > contributor to the framework.
 
-## Usage
+## Usage (blueprint)
 
 Create a worker module file:
 
 ```typescript
 // index.ts
-import { flash } from "https://deno.land/x/flash/mod.ts";
+import { rest } from "https://deno.land/x/flash/mod.ts";
 
-export default flash({
-  "/": "Welcome to flash!",
-  // => { message: "Welcome to flash!", status: 200 }
+const NotFound = Deno.errors.NotFound;
 
-  "/echo/:name": {
-    GET: ({ params }) => `${params.name}`,
+export default rest({
+  "/": {
+    // [200 OK] "Welcome to flash!"
+    GET: "Welcome to flash!",
+  },
+
+  "/find/:name": {
+    // [200 OK] params.name
+    GET: async ({ params }) => {
+      const resource = await findResource(params.name);
+
+      // [404 Not Found] { message: "'flare' was not found." }
+      if (!resource) throw new NotFound(`${params.name} was not found.`);
+
+      // [200 OK] { foo: 1, bar: 2 }
+      return resource;
+    },
   },
 
   "/create": {
     POST: async ({ request }) => {
-      const something = await create_something(request.body);
-      return {
-        message: "Created something in a flash!",
-        result: something,
-        status: 201,
-      };
+      const resource = await createResouce(request.body);
+
+      // [500 Internal Server Error] { message: "Failed in creating a resource." }
+      if (!resource) throw new Error("Failed in creating a resource.");
+
+      // [201 Created] { foo: 1, bar: 2 }
+      return { 201: resource };
     },
   },
-
-  404: "404: Not found", // => { message: "Not found", status: 404 }
 });
 ```
 

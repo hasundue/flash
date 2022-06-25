@@ -1,4 +1,9 @@
-import { ResponseObject, WorkerHandler, WorkerHandlerArgs } from "./mod.ts";
+import {
+  ModuleWorkerEnv,
+  ResponseObject,
+  WorkerHandler,
+  WorkerHandlerArgs,
+} from "./mod.ts";
 
 export type Routes = {
   [path: string]: MethodRoutes | RouterHandler | ResponseObject;
@@ -25,11 +30,14 @@ function isMethodRoutes(
 
 type PathParams = Record<string, string>;
 
-type RouterHandlerArgs = WorkerHandlerArgs & {
+type RouterHandlerArgs = Omit<WorkerHandlerArgs, "env"> & {
   params: PathParams;
 };
 
-type RouterHandler = (args: RouterHandlerArgs) => ResponseObject;
+type RouterHandler = (
+  args: RouterHandlerArgs,
+  env: ModuleWorkerEnv,
+) => ResponseObject;
 
 function isRouterHandler(
   obj: MethodRoutes | RouterHandler | ResponseObject,
@@ -45,10 +53,9 @@ function createWorkerHandler(
     isRouterHandler(obj)
       ? obj({
         request,
-        env,
         context,
         params: params ?? {},
-      })
+      }, env)
       : obj;
 }
 

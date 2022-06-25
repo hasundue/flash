@@ -1,9 +1,11 @@
 # flash
 
-Flash is a framework to build cloud service APIs with
-[Denoflare](https://denoflare.dev/).
+Flash is a framework to build REST APIs efficiently with
+[Denoflare](https://denoflare.dev/) ([Deno](https://deno.land/) +
+[Cloudflare Workers](https://www.cloudflare.com/products/workers-kv/)).
 
-For now it only supports REST API.
+> :warning: Do not use Flash for production use yet, unless you are a
+> contributor of the framework.
 
 ## Usage
 
@@ -37,5 +39,5 @@ denoflare serve index.ts
 
 ## Acknowledgment
 
-Development of **flash** is supported by
+Development of Flash is supported by
 [Active Connector Inc.](https://active-connector.com).

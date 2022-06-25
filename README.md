@@ -26,7 +26,7 @@ export default flash({
   "/create": {
     POST: async ({ request }) => {
       const something = await create_something(request.body);
-      return { 
+      return {
         message: "Created something in a flash!",
         result: something,
         status: 201,

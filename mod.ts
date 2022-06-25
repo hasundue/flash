@@ -1,7 +1,10 @@
 import type { IncomingRequestCf, ModuleWorkerContext } from "./deps.ts";
 
 import { Router, Routes } from "./router.ts";
-import { json } from "./response.ts";
+import { Formatter, json } from "./formatter.ts";
+
+export type { Formatter } from "./formatter.ts";
+export { json } from "./formatter.ts";
 
 export type {
   Method,
@@ -27,15 +30,15 @@ export type WorkerHandlerArgs = {
   context: ModuleWorkerContext;
 };
 
-export interface ResponseObject extends ResponseInit {
-  [field: string]: unknown;
-}
-
 export type WorkerHandler = (
   request: IncomingRequestCf,
   env: ModuleWorkerEnv,
   context: ModuleWorkerContext,
 ) => Promise<ResponseObject> | ResponseObject;
+
+export interface ResponseObject extends ResponseInit {
+  [field: string]: unknown;
+}
 
 /** flash() receives routes and returns a Module Worker interface
  * for denoflare.
@@ -60,17 +63,14 @@ export type WorkerHandler = (
  * });
  * ```
  */
-export function flash(routes: Routes): Worker {
+export function flash(routes: Routes, formatter: Formatter = json): Worker {
   const router = new Router(routes);
 
   return {
     fetch: async (request, env, context) => {
       const handler = router.exec(request);
       const obj = await handler(request, env, context);
-      return json(
-        obj as Exclude<ResponseObject, ResponseInit>,
-        obj,
-      );
+      return formatter(obj);
     },
   };
 }

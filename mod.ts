@@ -1,7 +1,9 @@
+import type { IncomingRequestCf, ModuleWorkerContext } from "./deps.ts";
+
 import { Router, Routes } from "./router.ts";
 import { json } from "./response.ts";
 
-import type { IncomingRequestCf, ModuleWorkerContext } from "./deps.ts";
+export type { Routes } from "./router.ts";
 
 export type ModuleWorkerEnv = Record<string, unknown>;
 
@@ -34,10 +36,22 @@ export type WorkerHandler = (
  *
  * @example
  * ```typescript
+ * import { flash } from "https://deno.land/x/flash/mod.ts";
+ *
  * export default flash({
- *  "/": ({ request }) => new Response("Hello Denoflare!"),
- *  404: () => new Response("Not Found")
- * })
+ *   "/": ({ request }) => {
+ *     const country = request.cf.country;
+ *     return { message: `Welcome from ${country}!` };
+ *   },
+ *
+ *  "/echo/:name": {
+ *     GET: ({ params }) => {
+ *       return { name: params.name };
+ *     },
+ *   },
+ *
+ *   404: { message: "Not found" },
+ * });
  * ```
  */
 export function flash(routes: Routes): Worker {

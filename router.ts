@@ -28,13 +28,13 @@ function isMethodRoutes(
   return typeof obj !== "function" && Object.keys(obj).every(isMethod);
 }
 
-type PathParams = Record<string, string>;
+export type PathParams = Record<string, string>;
 
-type RouterHandlerArgs = Omit<WorkerHandlerArgs, "env"> & {
+export type RouterHandlerArgs = Omit<WorkerHandlerArgs, "env"> & {
   params: PathParams;
 };
 
-type RouterHandler = (
+export type RouterHandler = (
   args: RouterHandlerArgs,
   env: ModuleWorkerEnv,
 ) => ResponseObject;

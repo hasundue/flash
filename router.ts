@@ -11,7 +11,7 @@ export type Routes = {
 };
 
 const Methods = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
-type Method = typeof Methods[number];
+export type Method = typeof Methods[number];
 
 // deno-lint-ignore no-explicit-any
 function isMethod(obj: any): obj is Method {

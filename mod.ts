@@ -4,6 +4,7 @@ import { Router, Routes } from "./router.ts";
 import { json } from "./response.ts";
 
 export type {
+  Method,
   MethodRoutes,
   RouterHandler,
   RouterHandlerArgs,

@@ -10,7 +10,7 @@ export type Routes = {
   404: RouterHandler | ResponseObject;
 };
 
-const Methods = ["GET", "POST"] as const;
+const Methods = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 type Method = typeof Methods[number];
 
 // deno-lint-ignore no-explicit-any

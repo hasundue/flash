@@ -18,7 +18,7 @@ function isMethod(obj: any): obj is Method {
   return Methods.includes(obj);
 }
 
-type MethodRoutes = {
+export type MethodRoutes = {
   [M in Method]?: RouterHandler | ResponseObject;
 };
 

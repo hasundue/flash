@@ -5,7 +5,7 @@ Flash is a framework to build REST APIs efficiently with
 [Cloudflare Workers](https://www.cloudflare.com/products/workers-kv/)).
 
 > :warning: Do not use Flash for production use yet, unless you are a
-> contributor of the framework.
+> contributor to the framework.
 
 ## Usage
 
@@ -22,9 +22,7 @@ export default flash({
   },
 
   "/echo/:name": {
-    GET: ({ params }) => {
-      return { name: params.name };
-    },
+    GET: ({ params }) => ({ name: params.name }),
   },
 
   404: { message: "Not found", status: 404 },

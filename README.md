@@ -1,7 +1,7 @@
 # flash
 
-Flash is a framework to build REST APIs with
-[Denoflare](https://denoflare.dev/) ([Deno](https://deno.land/) and
+Flash is a framework to build REST APIs with [Denoflare](https://denoflare.dev/)
+([Deno](https://deno.land/) and
 [Cloudflare Workers](https://www.cloudflare.com/products/workers-kv/)).
 
 > :warning: Do not use Flash for production use yet, unless you are a

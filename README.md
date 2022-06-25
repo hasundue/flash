@@ -12,20 +12,18 @@ Create a worker module file:
 import { flash } from "https://deno.land/x/flash/mod.ts";
 
 export default flash({
-  "/": { message: "Hello Flash!" },
+  "/": ({ request }) => {
+    const country = request.cf.country;
+    return { message: `Welcome from ${country}!` };
+  },
 
-  "/create": {
-    POST: () => {
-      // Do something here
-      return { message: "Created", status: 201 };
+  "/echo/:name": {
+    GET: ({ params }) => {
+      return { name: params.name };
     },
   },
 
-  "/object/:name": {
-    GET: ({ params }) => ({ name: params.name }),
-  },
-
-  404: { message: "Not Found", status: 404 },
+  404: { message: "Not found" },
 });
 ```
 

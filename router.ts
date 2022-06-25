@@ -37,6 +37,21 @@ function isRouterHandler(
   return typeof obj === "function";
 }
 
+function createWorkerHandler(
+  obj: RouterHandler | ResponseObject,
+  params: PathParams | undefined,
+): WorkerHandler {
+  return (request, env, context) =>
+    isRouterHandler(obj)
+      ? obj({
+        request,
+        env,
+        context,
+        params: params ?? {},
+      })
+      : obj;
+}
+
 export class Router {
   private routes: Routes;
 
@@ -46,21 +61,6 @@ export class Router {
 
   exec(request: Request) {
     const { search, pathname } = new URL(request.url);
-
-    const createWorkerHandler = (
-      obj: RouterHandler | ResponseObject,
-      params: PathParams | undefined,
-    ): WorkerHandler => {
-      return (request, env, context) =>
-        isRouterHandler(obj)
-          ? obj({
-            request,
-            env,
-            context,
-            params: params ?? {},
-          })
-          : obj;
-    };
 
     const startTime = Date.now();
 

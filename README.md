@@ -3,6 +3,8 @@
 Flash is a framework to build cloud service APIs with
 [Denoflare](https://denoflare.dev/).
 
+For now it only supports REST API.
+
 ## Usage
 
 Create a worker module file:
@@ -23,7 +25,7 @@ export default flash({
     },
   },
 
-  404: { message: "Not found" },
+  404: { message: "Not found", status: 404 },
 });
 ```
 

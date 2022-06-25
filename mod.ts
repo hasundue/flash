@@ -55,7 +55,7 @@ export type WorkerHandler = (
  *     },
  *   },
  *
- *   404: { message: "Not found" },
+ *   404: { message: "Not found", status: 404 },
  * });
  * ```
  */

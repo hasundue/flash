@@ -1,7 +1,7 @@
 # flash
 
-Flash is a framework to build REST APIs efficiently with
-[Denoflare](https://denoflare.dev/) ([Deno](https://deno.land/) +
+Flash is a framework to build REST APIs with
+[Denoflare](https://denoflare.dev/) ([Deno](https://deno.land/) and
 [Cloudflare Workers](https://www.cloudflare.com/products/workers-kv/)).
 
 > :warning: Do not use Flash for production use yet, unless you are a
@@ -13,9 +13,7 @@ Create a worker module file:
 
 ```typescript
 // index.ts
-import { rest } from "https://deno.land/x/flash/mod.ts";
-
-const NotFound = Deno.errors.NotFound;
+import { NotFound, rest } from "https://deno.land/x/flash/mod.ts";
 
 export default rest({
   "/": {
@@ -24,14 +22,13 @@ export default rest({
   },
 
   "/find/:name": {
-    // [200 OK] params.name
     GET: async ({ params }) => {
       const resource = await findResource(params.name);
 
-      // [404 Not Found] { message: "'flare' was not found." }
-      if (!resource) throw new NotFound(`${params.name} was not found.`);
+      // [404 Not Found] { message: "'deno' was not found." }
+      if (!resource) throw new NotFound(`'${params.name}' was not found.`);
 
-      // [200 OK] { foo: 1, bar: 2 }
+      // [200 OK] { name: "flare", foo: 1, bar: 2 }
       return resource;
     },
   },
@@ -43,7 +40,7 @@ export default rest({
       // [500 Internal Server Error] { message: "Failed in creating a resource." }
       if (!resource) throw new Error("Failed in creating a resource.");
 
-      // [201 Created] { foo: 1, bar: 2 }
+      // [201 Created] { name: "flash", foo: 1, bar: 2 }
       return { 201: resource };
     },
   },

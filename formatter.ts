@@ -1,11 +1,24 @@
 import { Status, STATUS_TEXT } from "./deps.ts";
-import { ResponseObject } from "./mod.ts";
+import { AbstractResponse, ResponseMessage, ResponseObject } from "./mod.ts";
 
-export type Formatter = (obj: ResponseObject) => Response;
+export type Formatter = (res: AbstractResponse) => Response;
 
-export const json: Formatter = (obj) => {
+export const json: Formatter = (res) => {
+  let obj: Parameters<typeof JSON.stringify>[0];
+
+  if (ResponseObject.guard(res)) {
+    obj = res;
+  } else if (ResponseMessage.guard(res)) {
+    obj = {
+      message: ResponseMessage.message(res),
+      status: ResponseMessage.status(res),
+    };
+  } else {
+    obj = { message: res };
+  }
+
   const value = obj as Exclude<ResponseObject, ResponseInit>;
-  const init = obj;
+  const init: ResponseInit = obj;
 
   const headers = init?.headers instanceof Headers
     ? init.headers

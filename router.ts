@@ -1,13 +1,13 @@
 import {
+  AbstractResponse,
   ModuleWorkerEnv,
-  ResponseObject,
   WorkerHandler,
   WorkerHandlerArgs,
 } from "./mod.ts";
 
 export type Routes = {
-  [path: string]: MethodRoutes | RouterHandler | ResponseObject;
-  404: RouterHandler | ResponseObject;
+  [path: string]: MethodRoutes | RouterHandler | AbstractResponse;
+  404: RouterHandler | AbstractResponse;
 };
 
 const Methods = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
@@ -19,11 +19,11 @@ function isMethod(obj: any): obj is Method {
 }
 
 export type MethodRoutes = {
-  [M in Method]?: RouterHandler | ResponseObject;
+  [M in Method]?: RouterHandler | AbstractResponse;
 };
 
 function isMethodRoutes(
-  obj: MethodRoutes | RouterHandler | ResponseObject,
+  obj: MethodRoutes | RouterHandler | AbstractResponse,
 ): obj is MethodRoutes {
   return typeof obj !== "function" && Object.keys(obj).every(isMethod);
 }
@@ -37,16 +37,16 @@ export type RouterHandlerArgs = Omit<WorkerHandlerArgs, "env"> & {
 export type RouterHandler = (
   args: RouterHandlerArgs,
   env: ModuleWorkerEnv,
-) => ResponseObject;
+) => AbstractResponse;
 
 function isRouterHandler(
-  obj: MethodRoutes | RouterHandler | ResponseObject,
+  obj: MethodRoutes | RouterHandler | AbstractResponse,
 ): obj is RouterHandler {
   return typeof obj === "function";
 }
 
 function createWorkerHandler(
-  obj: RouterHandler | ResponseObject,
+  obj: RouterHandler | AbstractResponse,
   params?: PathParams,
 ): WorkerHandler {
   return (request, env, context) =>
@@ -85,7 +85,7 @@ export class Router {
             if (method === request.method) {
               const routed = methodRoutes[method as Method] as
                 | RouterHandler
-                | ResponseObject;
+                | AbstractResponse;
               return createWorkerHandler(routed, params);
             }
           }

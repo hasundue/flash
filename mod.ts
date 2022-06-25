@@ -34,11 +34,36 @@ export type WorkerHandler = (
   request: IncomingRequestCf,
   env: ModuleWorkerEnv,
   context: ModuleWorkerContext,
-) => Promise<ResponseObject> | ResponseObject;
+) => Promise<AbstractResponse> | AbstractResponse;
 
 export interface ResponseObject extends ResponseInit {
   [field: string]: unknown;
 }
+
+export const ResponseObject = {
+  guard(res: AbstractResponse): res is ResponseObject {
+    return typeof res === "object";
+  },
+};
+
+export type ResponseMessage = `${number}: ${string}`;
+
+export const ResponseMessage = {
+  guard(res: AbstractResponse): res is ResponseMessage {
+    if (typeof res === "object") return false;
+    else return res.match(/^\d+: .*$/) !== null;
+  },
+  status(res: ResponseMessage): number | undefined {
+    const matched = res.match(/^\d+(?=: .*$)/);
+    return matched ? parseInt(matched[0]) : undefined;
+  },
+  message(res: ResponseMessage): string | undefined {
+    const matched = res.match(/(?<=^\d+: ).*$/);
+    return matched ? matched[0] : undefined;
+  },
+};
+
+export type AbstractResponse = ResponseObject | ResponseMessage | string;
 
 /** flash() receives routes and returns a Module Worker interface
  * for denoflare.
@@ -69,8 +94,8 @@ export function flash(routes: Routes, formatter: Formatter = json): Worker {
   return {
     fetch: async (request, env, context) => {
       const handler = router.exec(request);
-      const obj = await handler(request, env, context);
-      return formatter(obj);
+      const res = await handler(request, env, context);
+      return formatter(res);
     },
   };
 }

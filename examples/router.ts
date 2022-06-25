@@ -1,12 +1,12 @@
 import { flash } from "../mod.ts";
 
 export default flash({
-  "/": { message: "Flash Demo" },
+  "/": ({ request }) => `Welcome to ${new URL(request.url).hostname}!`,
 
   "/create": {
     POST: () => {
-      // Do something here
-      return { message: "Created", name: "flash", status: 201 };
+      /* do something here */
+      return "201: Created REST API in a flash!";
     },
   },
 
@@ -14,5 +14,5 @@ export default flash({
     GET: ({ params }) => ({ name: params.name }),
   },
 
-  404: { message: "Not Found", status: 404 },
+  404: "404: Not found",
 });

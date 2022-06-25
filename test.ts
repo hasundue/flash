@@ -25,12 +25,12 @@ Deno.test("router", async () => {
 
   assertObjectMatch(
     await knock("/"),
-    { message: "Flash Demo" },
+    { message: "Welcome to localhost!" },
   );
 
   assertObjectMatch(
     await knock("/create", "POST"),
-    { message: "Created", status: 201 },
+    { status: 201 },
   );
 
   assertObjectMatch(

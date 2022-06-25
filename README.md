@@ -16,23 +16,32 @@ Create a worker module file:
 import { flash } from "https://deno.land/x/flash/mod.ts";
 
 export default flash({
-  "/": ({ request }) => {
-    const country = request.cf.country;
-    return { message: `Welcome from ${country}!` };
-  },
+  "/": "Welcome to flash!",
+  // => { message: "Welcome to flash!", status: 200 }
 
   "/echo/:name": {
-    GET: ({ params }) => ({ name: params.name }),
+    GET: ({ params }) => `${params.name}`,
   },
 
-  404: { message: "Not found", status: 404 },
+  "/create": {
+    POST: async ({ request }) => {
+      const something = await create_something(request.body);
+      return { 
+        message: "Created something in a flash!",
+        result: something,
+        status: 201,
+      };
+    },
+  },
+
+  404: "404: Not found", // => { message: "Not found", status: 404 }
 });
 ```
 
 And run with Denoflare!
 
 ```sh
-denoflare serve index.ts
+$ denoflare serve index.ts
 ```
 
 ## Acknowledgment

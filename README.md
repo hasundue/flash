@@ -21,32 +21,32 @@ export default rest({
     GET: "Welcome to flash!",
   },
 
-  "/resources": {
+  "/users": {
     POST: async ({ request }) => {
-      const resource = await createResouce(request.body);
+      const user = await createUser(request.body);
 
-      // [500 Internal Server Error] { message: "Failed in creating a resource." }
-      if (!resource) return { 500: "Failed in creating a resource." };
+      // [500 Internal Server Error] { message: "Failed in creating a user." }
+      if (!user) return { 500: { message: "Failed in creating a user." } };
 
       // [201 Created] { name: "flash", foo: 1, bar: 2 }
-      return { 201: resource };
+      return { 201: user };
     },
   },
 
-  "/resources/:name": {
+  "/users/:name": {
     GET: async ({ params }) => {
-      const resource = await findResource(params.name);
+      const user = await getUser(params.name);
 
-      // [404 Not Found] { message: "'deno' was not found." }
-      if (!resource) return { 404: `'${params.name}' was not found.` };
+      // [404 Not Found] { message: "User 'deno' was not found." }
+      if (!user) return { 404: { message: `User '${params.name}' was not found.` } };
 
       // [200 OK] { name: "flare", foo: 1, bar: 2 }
-      return resource;
+      return user;
     },
   },
 
-  // [404 Not Found] { message: "URL not exist" }
-  404: ({ message: "URL not exist." }),
+  // [404 Not Found] { message: "The requested URL was not found." }
+  404: { message: "The requested URL was not found." },
 
   // [500 Internal Server Error] { message: "Unexpected error occured.", stack: "..." }
   500: ({ error }) => ({

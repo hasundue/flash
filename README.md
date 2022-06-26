@@ -1,8 +1,8 @@
 # flash
 
-Flash is a framework to build REST APIs with [Denoflare](https://denoflare.dev/)
-([Deno](https://deno.land/) and
-[Cloudflare Workers](https://www.cloudflare.com/products/workers-kv/)).
+Flash is a framework to build REST APIs with [Deno](https://deno.land/) and
+[Cloudflare Workers](https://www.cloudflare.com/products/workers-kv/)
+([Denoflare](https://denoflare.dev/))
 
 > :warning: Do not use Flash for production use yet, unless you are a
 > contributor to the framework.
@@ -44,6 +44,15 @@ export default rest({
       return resource;
     },
   },
+
+  // [404 Not Found] { message: "URL not exist" }
+  404: ({ message: "URL not exist." }),
+
+  // [500 Internal Server Error] { message: "Unexpected error occured.", stack: "..." }
+  500: ({ error }) => ({
+    message: "Unexpected error occured.",
+    stack: error.stack,
+  }),
 });
 ```
 

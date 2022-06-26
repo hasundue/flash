@@ -21,19 +21,7 @@ export default rest({
     GET: "Welcome to flash!",
   },
 
-  "/find/:name": {
-    GET: async ({ params }) => {
-      const resource = await findResource(params.name);
-
-      // [404 Not Found] { message: "'deno' was not found." }
-      if (!resource) throw new NotFound(`'${params.name}' was not found.`);
-
-      // [200 OK] { name: "flare", foo: 1, bar: 2 }
-      return resource;
-    },
-  },
-
-  "/create": {
+  "/resources": {
     POST: async ({ request }) => {
       const resource = await createResouce(request.body);
 
@@ -42,6 +30,18 @@ export default rest({
 
       // [201 Created] { name: "flash", foo: 1, bar: 2 }
       return { 201: resource };
+    },
+  },
+
+  "/resources/:name": {
+    GET: async ({ params }) => {
+      const resource = await findResource(params.name);
+
+      // [404 Not Found] { message: "'deno' was not found." }
+      if (!resource) throw new NotFound(`'${params.name}' was not found.`);
+
+      // [200 OK] { name: "flare", foo: 1, bar: 2 }
+      return resource;
     },
   },
 });

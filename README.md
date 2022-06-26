@@ -7,13 +7,13 @@ Flash is a framework to build REST APIs with [Denoflare](https://denoflare.dev/)
 > :warning: Do not use Flash for production use yet, unless you are a
 > contributor to the framework.
 
-## Usage (blueprint)
+## Usage
 
 Create a worker module file:
 
 ```typescript
 // index.ts
-import { NotFound, rest } from "https://deno.land/x/flash/mod.ts";
+import { rest } from "https://deno.land/x/flash/mod.ts";
 
 export default rest({
   "/": {

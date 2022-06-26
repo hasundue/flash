@@ -26,7 +26,7 @@ export default rest({
       const resource = await createResouce(request.body);
 
       // [500 Internal Server Error] { message: "Failed in creating a resource." }
-      if (!resource) throw new Error("Failed in creating a resource.");
+      if (!resource) return { 500: "Failed in creating a resource." };
 
       // [201 Created] { name: "flash", foo: 1, bar: 2 }
       return { 201: resource };
@@ -38,7 +38,7 @@ export default rest({
       const resource = await findResource(params.name);
 
       // [404 Not Found] { message: "'deno' was not found." }
-      if (!resource) throw new NotFound(`'${params.name}' was not found.`);
+      if (!resource) return { 404: `'${params.name}' was not found.` };
 
       // [200 OK] { name: "flare", foo: 1, bar: 2 }
       return resource;

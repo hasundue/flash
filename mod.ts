@@ -1,8 +1,8 @@
 import type { IncomingRequestCf, ModuleWorkerContext } from "./deps.ts";
 
-import { Router, Routes } from "./router.ts";
-import { ResponseLike } from "./response.ts";
-import { Arguments } from "./types.ts";
+import { Router, Routes } from "./modules/router.ts";
+import { ResponseLike } from "./modules/response.ts";
+import { Arguments } from "./modules/types.ts";
 
 export interface WorkerEnv {
 }

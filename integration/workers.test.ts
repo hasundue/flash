@@ -36,7 +36,7 @@ const assert = async (
 };
 
 Deno.test("router", async () => {
-  const proc = await startServer("./examples/router.ts");
+  const proc = await startServer("../examples/router.ts");
 
   await assert("/", "GET", 200, "Welcome to flash!");
   await assert("/", "POST", 404, { message: "URL not exist." });

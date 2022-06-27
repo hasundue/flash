@@ -41,6 +41,6 @@ export const defaultFormatter: Formatter = (res, sta) => {
     };
     init.headers.set("Content-Type", "application/json; charset=utf-8");
 
-    return new Response(JSON.stringify(res) + "\n", init);
+    return new Response(JSON.stringify(precursor) + "\n", init);
   }
 };

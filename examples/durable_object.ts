@@ -1,24 +1,19 @@
-import { rest } from "../mod.ts";
+import { flare, WorkerEnv, WorkerRouteHandler } from "../mod.ts";
 import {
   DurableObjectNamespace,
   DurableObjectState,
   DurableObjectStub,
 } from "https://pax.deno.dev/skymethod/denoflare@v0.5.2/common/cloudflare_workers_types.d.ts";
 
-type WorkerEnv = {
-  readonly DATA_STACK: DurableObjectNamespace;
-};
+declare module "../mod.ts" {
+  interface WorkerEnv {
+    readonly DATA_STACK: DurableObjectNamespace;
+  }
+}
 
-export default rest({
-  "/:name": {
-    "GET": ({ params }, env: WorkerEnv) => {
-      const id = env.DATA_STACK.idFromName(params.name);
-      return { name: params.name, id };
-    },
-  },
+export default flare({});
 
-  404: { message: "Not Found", status: 404 },
-});
+const handler: WorkerRouteHandler = ({ env }) => env.DATA_STACK;
 
 export class DataStack {
 }

@@ -1,7 +1,7 @@
 import { ErrorStatus } from "./deps.ts";
 import {
-  ModuleWorkerEnv,
   NotFound,
+  WorkerEnv,
   WorkerHandler,
   WorkerHandlerArgs,
 } from "./mod.ts";
@@ -51,7 +51,7 @@ export type RouterHandlerArgs = Omit<WorkerHandlerArgs, "env"> & {
 
 export type RouterHandler = (
   args: RouterHandlerArgs,
-  env: ModuleWorkerEnv,
+  env: WorkerEnv,
 ) => ResponseObject | Promise<ResponseObject>;
 
 export const RouterHandler = {
@@ -68,7 +68,7 @@ export type ErrorHandlerArgs = Omit<RouterHandlerArgs, "path" | "params"> & {
 
 export type ErrorHandler = (
   args: ErrorHandlerArgs,
-  env: ModuleWorkerEnv,
+  env: WorkerEnv,
 ) => ResponseObject | Promise<ResponseObject>;
 
 export const ErrorHandler = {

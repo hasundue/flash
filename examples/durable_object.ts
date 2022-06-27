@@ -1,14 +1,18 @@
-import { flash } from "../mod.ts";
-import { DurableObjectNamespace } from "https://pax.deno.dev/skymethod/denoflare@v0.5.2/common/cloudflare_workers_types.d.ts";
+import { rest } from "../mod.ts";
+import {
+  DurableObjectNamespace,
+  DurableObjectState,
+  DurableObjectStub,
+} from "https://pax.deno.dev/skymethod/denoflare@v0.5.2/common/cloudflare_workers_types.d.ts";
 
-declare type WorkerEnv = {
-  readonly do: DurableObjectNamespace;
+type WorkerEnv = {
+  readonly DATA_STACK: DurableObjectNamespace;
 };
 
-export default flash({
+export default rest({
   "/:name": {
     "GET": ({ params }, env: WorkerEnv) => {
-      const id = env.do.idFromName(params.name);
+      const id = env.DATA_STACK.idFromName(params.name);
       return { name: params.name, id };
     },
   },
@@ -16,5 +20,5 @@ export default flash({
   404: { message: "Not Found", status: 404 },
 });
 
-export class DO {
+export class DataStack {
 }

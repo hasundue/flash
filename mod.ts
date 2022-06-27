@@ -1,8 +1,13 @@
-import type { IncomingRequestCf, ModuleWorkerContext, Status } from "./deps.ts";
+import type {
+  ErrorStatus,
+  IncomingRequestCf,
+  ModuleWorkerContext,
+  Status,
+} from "./deps.ts";
 
-import { ErrorHandler, Rest, Router } from "./router.ts";
-import { defaultFormatter, Formatter } from "./formatter.ts";
-import { ResponseObject } from "./response.ts";
+// import { ErrorHandler, Rest, Router } from "./router.ts";
+// import { defaultFormatter, Formatter } from "./formatter.ts";
+// import { ResponseObject } from "./response.ts";
 
 export type { Formatter } from "./formatter.ts";
 export { defaultFormatter } from "./formatter.ts";
@@ -31,67 +36,75 @@ export type WorkerHandlerArgs = {
   context: ModuleWorkerContext;
 };
 
-export type WorkerHandler = (
-  request: IncomingRequestCf,
-  env: ModuleWorkerEnv,
-  context: ModuleWorkerContext,
-) => Promise<ResponseObject> | ResponseObject;
+// export class NotFound extends Error {}
 
-export class NotFound extends Error {}
+type Routes<H extends Handler> =
+  & {
+    [path: PathString]: RouteValue<H>;
+  }
+  & Partial<
+    {
+      [code in ErrorStatus]: RouteValue<H>;
+    }
+  >;
+
+type RouteValue<H extends Handler> = H | ResponseLike;
+
+type ResponseLike = Response | string;
+
+export interface Router<H extends Handler> {
+  constructor: (routes: Routes<H>) => Router<H>;
+  exec: (request: Request) => [RouteValue<H>, Responder<H>];
+}
+
+interface Handler {
+  (request: Request): Response | Promise<Response>;
+}
+
+function isHandler<H extends Handler>(value: RouteValue<H>): value is Handler {
+  return typeof value === "function";
+}
+
+interface WorkerHandler extends Handler {
+  (
+    request: IncomingRequestCf,
+    env: ModuleWorkerEnv,
+    context: ModuleWorkerContext,
+  ): ReturnType<Handler>;
+}
+
+interface DurableObjectHandler extends Handler {
+  (
+    request: Request,
+    init?: RequestInit,
+  ): ReturnType<Handler>;
+}
+
+type Responder<H extends Handler> = (
+  ...args: Parameters<H>
+) => (value: RouteValue<H>) => ReturnType<H>;
+
+type PathString = `/${string}`;
 
 /** flash() receives routes and returns a Module Worker interface
  * for denoflare.
- *
- * @example
- * ```typescript
- * import { flash } from "https://deno.land/x/flash/mod.ts";
- *
- * export default flash({
- *   "/": ({ request }) => {
- *     const country = request.cf.country;
- *     return { message: `Welcome from ${country}!` };
- *   },
- *
- *  "/echo/:name": {
- *     GET: ({ params }) => {
- *       return { name: params.name };
- *     },
- *   },
- *
- *   404: { message: "Not found", status: 404 },
- * });
- * ```
  */
-export function rest(
-  routes: Rest,
-  formatter: Formatter = defaultFormatter,
-): Worker {
-  const router = new Router(routes);
+export function flare(routes: Routes<WorkerHandler>): Worker {
+  const router: Router<WorkerHandler> = new Router(routes);
 
   return {
     fetch: async (request, env, context) => {
-      try {
-        const handler = router.exec(request);
-        const response = await handler(request, env, context);
-        return formatter(response);
-      } catch (error) {
-        let obj: ErrorHandler | ResponseObject;
-        let status: Status;
-
-        if (error instanceof NotFound) {
-          obj = router.errors[404];
-          status = 404;
-        } else {
-          obj = router.errors[500];
-          status = 400;
-        }
-
-        const response = ErrorHandler.guard(obj)
-          ? await obj({ request, context, error }, env)
-          : obj;
-
-        return formatter(response, status);
-      }
+      const [value, responder] = router.exec(request);
     },
+  };
+}
+
+export function fetcher(
+  routes: Routes<DurableObjectHandler>,
+): DurableObjectHandler {
+  const router: Router<DurableObjectHandler> = new Router(routes);
+  return async (request, init?) => {
+    const [value, responder] = router.exec(request);
+    return await responder(request, init)(value);
   };
 }

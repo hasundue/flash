@@ -108,53 +108,55 @@ function createWorkerHandler(
 }
 
 export class Router {
-  readonly routes: Routes;
-  readonly errors: Pick<Errors, 404 | 500> & Partial<Errors>;
-
-  constructor(rest: Rest) {
-    this.routes = rest as Routes;
-
-    const errors = rest as Partial<Errors>;
-    this.errors = {
-      ...errors,
-      404: errors[404] ?? defaultNotFoundHandler,
-      500: errors[500] ?? defaultErrorHandler,
-    };
-  }
-
-  exec(request: Request) {
-    const { search, pathname } = new URL(request.url);
-
-    const startTime = Date.now();
-
-    for (const route of Object.keys(this.routes)) {
-      const pattern = new URLPattern({ pathname: route });
-      const params = pattern.exec({ pathname })?.pathname.groups;
-
-      if (pattern.test({ pathname })) {
-        const routed = this.routes[route as PathString];
-
-        if (MethodRoutes.guard(routed)) {
-          const methodRoutes = routed;
-
-          for (const method of Object.keys(methodRoutes)) {
-            if (method === request.method) {
-              const routed = methodRoutes[method as Method] as
-                | RouterHandler
-                | ResponseObject;
-              return createWorkerHandler(routed, pathname, params);
-            }
-          }
-        } else {
-          return createWorkerHandler(routed, pathname, params);
-        }
-      }
-    }
-
-    console.log(
-      `${request.method} ${pathname + search} ${Date.now() - startTime}ms`,
-    );
-
-    throw new NotFound();
-  }
 }
+// export class Router {
+//   readonly routes: Routes;
+//   readonly errors: Pick<Errors, 404 | 500> & Partial<Errors>;
+
+//   constructor(rest: Rest) {
+//     this.routes = rest as Routes;
+
+//     const errors = rest as Partial<Errors>;
+//     this.errors = {
+//       ...errors,
+//       404: errors[404] ?? defaultNotFoundHandler,
+//       500: errors[500] ?? defaultErrorHandler,
+//     };
+//   }
+
+//   exec(request: Request) {
+//     const { search, pathname } = new URL(request.url);
+
+//     const startTime = Date.now();
+
+//     for (const route of Object.keys(this.routes)) {
+//       const pattern = new URLPattern({ pathname: route });
+//       const params = pattern.exec({ pathname })?.pathname.groups;
+
+//       if (pattern.test({ pathname })) {
+//         const routed = this.routes[route as PathString];
+
+//         if (MethodRoutes.guard(routed)) {
+//           const methodRoutes = routed;
+
+//           for (const method of Object.keys(methodRoutes)) {
+//             if (method === request.method) {
+//               const routed = methodRoutes[method as Method] as
+//                 | RouterHandler
+//                 | ResponseObject;
+//               return createWorkerHandler(routed, pathname, params);
+//             }
+//           }
+//         } else {
+//           return createWorkerHandler(routed, pathname, params);
+//         }
+//       }
+//     }
+
+//     console.log(
+//       `${request.method} ${pathname + search} ${Date.now() - startTime}ms`,
+//     );
+
+//     throw new NotFound();
+//   }
+// }

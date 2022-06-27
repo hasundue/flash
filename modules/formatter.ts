@@ -1,4 +1,4 @@
-import { Status, STATUS_TEXT } from "./deps.ts";
+import { Status, STATUS_TEXT } from "../deps.ts";
 import { ErrorResponse, ResponseObject, SuccessResponse } from "./response.ts";
 
 export type Formatter = (response: ResponseObject, status?: Status) => Response;

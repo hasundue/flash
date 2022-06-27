@@ -1,4 +1,4 @@
-import { ErrorStatus, SuccessfulStatus } from "./deps.ts";
+import { ErrorStatus, SuccessfulStatus } from "../deps.ts";
 import { PickOne } from "./types.ts";
 
 export type SuccessObject =

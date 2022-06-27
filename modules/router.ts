@@ -1,8 +1,8 @@
-import { ErrorStatus } from "./deps.ts";
+import { ErrorStatus } from "../deps.ts";
 import type { Arguments } from "./types.ts";
 import { getKeys, PickAny } from "./types.ts";
 
-import { Context, Handler, RouterInterface } from "./mod.ts";
+import { Context, Handler, RouterInterface } from "../mod.ts";
 import { ResponseLike } from "./response.ts";
 
 export type Routes<C extends Context> =

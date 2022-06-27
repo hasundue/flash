@@ -4,10 +4,15 @@ import type {
   ModuleWorkerContext,
 } from "./deps.ts";
 
+import { Router } from "./router.ts";
+
 export interface WorkerEnv {
 }
 
-type Context = Worker | DurableObject;
+type WorkerRequest = IncomingRequestCf;
+type WorkerContext = ModuleWorkerContext;
+
+export type Context = Worker | DurableObject;
 
 type Worker = "Worker";
 type DurableObject = "DurableObject";
@@ -16,9 +21,9 @@ type Handler<C extends Context> = C extends Worker ? WorkerHandler
   : DurableObjectHandler;
 
 type WorkerHandler = (
-  request: IncomingRequestCf,
+  request: WorkerRequest,
   env: WorkerEnv,
-  context: ModuleWorkerContext,
+  context: WorkerContext,
 ) => Response | Promise<Response>;
 
 type DurableObjectHandler = (
@@ -26,7 +31,7 @@ type DurableObjectHandler = (
   init?: RequestInit,
 ) => Response | Promise<Response>;
 
-type Routes<C extends Context> =
+export type Routes<C extends Context> =
   & {
     [path: PathString]: RouteValue<C>;
   }
@@ -44,19 +49,19 @@ type RouteHandler<C extends Context> = C extends Worker ? WorkerRouteHandler
   : DurableObjectRouteHandler;
 
 export type WorkerRouteHandler = (args: {
-  request: IncomingRequestCf;
+  request: WorkerRequest;
   env: WorkerEnv;
-  context: ModuleWorkerContext;
+  context: WorkerContext;
 }) => ResponseLike | Promise<ResponseLike>;
 
 type DurableObjectRouteHandler = (args: {
-  request: IncomingRequestCf;
+  request: WorkerRequest;
   env: WorkerEnv;
 }) => ResponseLike | Promise<ResponseLike>;
 
 type ResponseLike = Response | string;
 
-export interface Router<C extends Context> {
+export interface RouterInterface<C extends Context> {
   constructor: (routes: Routes<C>) => Router<C>;
   exec: (request: Request) => [Handler<C> | ResponseLike, Formatter];
 }
@@ -66,7 +71,7 @@ type Formatter = (precursor: ResponseLike) => Response;
 export function flare(routes: Routes<Worker>): {
   fetch: WorkerHandler;
 } {
-  const router: Router<Worker> = new Router(routes);
+  const router = new Router(routes);
   return {
     fetch: async (request, env, context) => {
       const [value, formatter] = router.exec(request);
@@ -78,9 +83,7 @@ export function flare(routes: Routes<Worker>): {
   };
 }
 
-export function fetcher(
-  routes: Routes<DurableObject>,
-): DurableObjectHandler {
+export function fetcher(routes: Routes<DurableObject>): DurableObjectHandler {
   const router: Router<DurableObject> = new Router(routes);
   return async (request, init?) => {
     const [value, formatter] = router.exec(request);

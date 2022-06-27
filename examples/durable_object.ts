@@ -1,4 +1,4 @@
-import { flare, WorkerEnv, WorkerRouteHandler } from "../mod.ts";
+import { flare, WorkerRouteHandler } from "../mod.ts";
 import {
   DurableObjectNamespace,
   DurableObjectState,

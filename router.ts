@@ -1,114 +1,118 @@
-import { ErrorStatus } from "./deps.ts";
-import {
-  NotFound,
-  WorkerEnv,
-  WorkerHandler,
-  WorkerHandlerArgs,
-} from "./mod.ts";
-import { ResponseObject } from "./response.ts";
+// import { ErrorStatus } from "./deps.ts";
+import { Context, RouterInterface, Routes } from "./mod.ts";
+// import { ResponseObject } from "./response.ts";
 
-type PathString = `/${string}`;
+// type PathString = `/${string}`;
 
-type Routes = {
-  [path: PathString]: MethodRoutes | RouterHandler | ResponseObject;
-};
+// type Routes = {
+//   [path: PathString]: MethodRoutes | RouterHandler | ResponseObject;
+// };
 
-type Errors = {
-  [code in ErrorStatus]: ErrorHandler | ResponseObject;
-};
+// type Errors = {
+//   [code in ErrorStatus]: ErrorHandler | ResponseObject;
+// };
 
-export type Rest = Routes & Partial<Errors>;
+// export type Rest = Routes & Partial<Errors>;
 
-const Methods = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
-export type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+// const Methods = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
+// export type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
-export const Method = {
-  // deno-lint-ignore no-explicit-any
-  guard(obj: any): obj is Method {
-    return Methods.includes(obj);
-  },
-};
+// export const Method = {
+//   // deno-lint-ignore no-explicit-any
+//   guard(obj: any): obj is Method {
+//     return Methods.includes(obj);
+//   },
+// };
 
-export type MethodRoutes = {
-  [M in Method]?: RouterHandler | ResponseObject;
-};
+// export type MethodRoutes = {
+//   [M in Method]?: RouterHandler | ResponseObject;
+// };
 
-export const MethodRoutes = {
-  guard(
-    obj: MethodRoutes | RouterHandler | ResponseObject,
-  ): obj is MethodRoutes {
-    if (!obj || typeof obj !== "object") return false;
-    return Object.keys(obj).every(Method.guard);
-  },
-};
+// export const MethodRoutes = {
+//   guard(
+//     obj: MethodRoutes | RouterHandler | ResponseObject,
+//   ): obj is MethodRoutes {
+//     if (!obj || typeof obj !== "object") return false;
+//     return Object.keys(obj).every(Method.guard);
+//   },
+// };
 
-export type PathParams = Record<string, string>;
+// export type PathParams = Record<string, string>;
 
-export type RouterHandlerArgs = Omit<WorkerHandlerArgs, "env"> & {
-  path: string;
-  params: PathParams;
-};
+// export type RouterHandlerArgs = Omit<WorkerHandlerArgs, "env"> & {
+//   path: string;
+//   params: PathParams;
+// };
 
-export type RouterHandler = (
-  args: RouterHandlerArgs,
-  env: WorkerEnv,
-) => ResponseObject | Promise<ResponseObject>;
+// export type RouterHandler = (
+//   args: RouterHandlerArgs,
+//   env: WorkerEnv,
+// ) => ResponseObject | Promise<ResponseObject>;
 
-export const RouterHandler = {
-  guard(
-    obj: MethodRoutes | RouterHandler | ResponseObject,
-  ): obj is RouterHandler {
-    return typeof obj === "function";
-  },
-};
+// export const RouterHandler = {
+//   guard(
+//     obj: MethodRoutes | RouterHandler | ResponseObject,
+//   ): obj is RouterHandler {
+//     return typeof obj === "function";
+//   },
+// };
 
-export type ErrorHandlerArgs = Omit<RouterHandlerArgs, "path" | "params"> & {
-  error: Error;
-};
+// export type ErrorHandlerArgs = Omit<RouterHandlerArgs, "path" | "params"> & {
+//   error: Error;
+// };
 
-export type ErrorHandler = (
-  args: ErrorHandlerArgs,
-  env: WorkerEnv,
-) => ResponseObject | Promise<ResponseObject>;
+// export type ErrorHandler = (
+//   args: ErrorHandlerArgs,
+//   env: WorkerEnv,
+// ) => ResponseObject | Promise<ResponseObject>;
 
-export const ErrorHandler = {
-  guard(
-    obj: ErrorHandler | ResponseObject,
-  ): obj is ErrorHandler {
-    return typeof obj === "function";
-  },
-};
+// export const ErrorHandler = {
+//   guard(
+//     obj: ErrorHandler | ResponseObject,
+//   ): obj is ErrorHandler {
+//     return typeof obj === "function";
+//   },
+// };
 
-export const defaultNotFoundHandler: ErrorHandler = ({ request }) => {
-  const url = new URL(request.url);
-  return `Resource ${url.pathname} not found.`;
-};
+// export const defaultNotFoundHandler: ErrorHandler = ({ request }) => {
+//   const url = new URL(request.url);
+//   return `Resource ${url.pathname} not found.`;
+// };
 
-export const defaultErrorHandler: ErrorHandler = ({ error }) => {
-  return {
-    500: "Unexpected error occured.",
-    stack: error.stack,
-  };
-};
+// export const defaultErrorHandler: ErrorHandler = ({ error }) => {
+//   return {
+//     500: "Unexpected error occured.",
+//     stack: error.stack,
+//   };
+// };
 
-function createWorkerHandler(
-  obj: RouterHandler | ResponseObject,
-  path: string,
-  params?: PathParams,
-): WorkerHandler {
-  return (request, env, context) =>
-    RouterHandler.guard(obj)
-      ? obj({
-        request,
-        context,
-        path,
-        params: params ?? {},
-      }, env)
-      : obj;
+// function createWorkerHandler(
+//   obj: RouterHandler | ResponseObject,
+//   path: string,
+//   params?: PathParams,
+// ): WorkerHandler {
+//   return (request, env, context) =>
+//     RouterHandler.guard(obj)
+//       ? obj({
+//         request,
+//         context,
+//         path,
+//         params: params ?? {},
+//       }, env)
+//       : obj;
+// }
+
+export class Router<C extends Context> implements RouterInterface<C> {
+  readonly routes: Routes<C>;
+
+  constructor(routes: Routes<C>) {
+    this.routes = routes;
+  }
+
+  exec(request: Request) {
+  }
 }
 
-export class Router {
-}
 // export class Router {
 //   readonly routes: Routes;
 //   readonly errors: Pick<Errors, 404 | 500> & Partial<Errors>;

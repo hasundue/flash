@@ -1,12 +1,20 @@
-export type JsonObject =
-  | Record<string, unknown>
-  | unknown[]
-  | number
-  | string
-  | boolean;
-
 export type PickOne<T> = {
   [P in keyof T]:
     & Record<P, T[P]>
     & Partial<Record<Exclude<keyof T, P>, undefined>>;
 }[keyof T];
+
+export type PickAny<T> = T extends Record<string, (infer S)> ? {
+  [P in keyof T]:
+    & Record<P, T[P]>
+    & Partial<Record<Exclude<keyof T, P>, S>>;
+}[keyof T]
+  : never;
+
+export type Arguments<T extends (...args: any) => any> = {
+  [K in keyof Parameters<T>]: Parameters<T>[K];
+};
+
+export function getKeys<T extends string>(object: PickAny<Record<T, unknown>>) {
+  return Object.keys(object) as T[];
+}

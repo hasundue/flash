@@ -1,34 +1,32 @@
 import { ErrorStatus, SuccessfulStatus } from "./deps.ts";
-import { JsonObject, PickOne } from "./types.ts";
+import { PickOne } from "./types.ts";
 
-export type SuccessResponse =
+export type SuccessObject =
   & PickOne<
     {
-      [code in SuccessfulStatus]: JsonObject;
+      [code in SuccessfulStatus]: unknown;
     }
   >
   & Omit<ResponseInit, "status">;
 
 export const SuccessResponse = {
-  guard(obj: ResponseObject): obj is SuccessResponse {
-    // if (obj !== "object" || Array.isArray(obj)) return false;
-    // console.log(obj);
+  guard(obj: ResponseLike): obj is SuccessObject {
     return Object.keys(obj).some((key) => key.match(/2\d{2}/) !== null);
   },
 };
 
-export type ErrorResponse =
+export type ErrorObject =
   & PickOne<
     {
-      [code in ErrorStatus]: string;
+      [code in ErrorStatus]: unknown;
     }
   >
   & Omit<ResponseInit, "status">;
 
 export const ErrorResponse = {
-  guard(obj: ResponseObject): obj is ErrorResponse {
+  guard(obj: ResponseLike): obj is ErrorObject {
     return Object.keys(obj).some((key) => key.match(/[4-5]\d{2}/));
   },
 };
 
-export type ResponseObject = SuccessResponse | ErrorResponse | JsonObject;
+export type ResponseLike = SuccessObject | ErrorObject | Response;

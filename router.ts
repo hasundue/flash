@@ -1,166 +1,115 @@
-// import { ErrorStatus } from "./deps.ts";
-import { Context, RouterInterface, Routes } from "./mod.ts";
-// import { ResponseObject } from "./response.ts";
+import { ErrorStatus } from "./deps.ts";
+import type { Arguments } from "./types.ts";
+import { getKeys, PickAny } from "./types.ts";
 
-// type PathString = `/${string}`;
+import { Context, Handler, RouterInterface } from "./mod.ts";
+import { ResponseLike } from "./response.ts";
 
-// type Routes = {
-//   [path: PathString]: MethodRoutes | RouterHandler | ResponseObject;
-// };
-
-// type Errors = {
-//   [code in ErrorStatus]: ErrorHandler | ResponseObject;
-// };
-
-// export type Rest = Routes & Partial<Errors>;
-
-// const Methods = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
-// export type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-
-// export const Method = {
-//   // deno-lint-ignore no-explicit-any
-//   guard(obj: any): obj is Method {
-//     return Methods.includes(obj);
-//   },
-// };
-
-// export type MethodRoutes = {
-//   [M in Method]?: RouterHandler | ResponseObject;
-// };
-
-// export const MethodRoutes = {
-//   guard(
-//     obj: MethodRoutes | RouterHandler | ResponseObject,
-//   ): obj is MethodRoutes {
-//     if (!obj || typeof obj !== "object") return false;
-//     return Object.keys(obj).every(Method.guard);
-//   },
-// };
-
-// export type PathParams = Record<string, string>;
-
-// export type RouterHandlerArgs = Omit<WorkerHandlerArgs, "env"> & {
-//   path: string;
-//   params: PathParams;
-// };
-
-// export type RouterHandler = (
-//   args: RouterHandlerArgs,
-//   env: WorkerEnv,
-// ) => ResponseObject | Promise<ResponseObject>;
-
-// export const RouterHandler = {
-//   guard(
-//     obj: MethodRoutes | RouterHandler | ResponseObject,
-//   ): obj is RouterHandler {
-//     return typeof obj === "function";
-//   },
-// };
-
-// export type ErrorHandlerArgs = Omit<RouterHandlerArgs, "path" | "params"> & {
-//   error: Error;
-// };
-
-// export type ErrorHandler = (
-//   args: ErrorHandlerArgs,
-//   env: WorkerEnv,
-// ) => ResponseObject | Promise<ResponseObject>;
-
-// export const ErrorHandler = {
-//   guard(
-//     obj: ErrorHandler | ResponseObject,
-//   ): obj is ErrorHandler {
-//     return typeof obj === "function";
-//   },
-// };
-
-// export const defaultNotFoundHandler: ErrorHandler = ({ request }) => {
-//   const url = new URL(request.url);
-//   return `Resource ${url.pathname} not found.`;
-// };
-
-// export const defaultErrorHandler: ErrorHandler = ({ error }) => {
-//   return {
-//     500: "Unexpected error occured.",
-//     stack: error.stack,
-//   };
-// };
-
-// function createWorkerHandler(
-//   obj: RouterHandler | ResponseObject,
-//   path: string,
-//   params?: PathParams,
-// ): WorkerHandler {
-//   return (request, env, context) =>
-//     RouterHandler.guard(obj)
-//       ? obj({
-//         request,
-//         context,
-//         path,
-//         params: params ?? {},
-//       }, env)
-//       : obj;
-// }
+export type Routes<C extends Context> =
+  & {
+    [path: PathString]: RouteValue<C>;
+  }
+  & {
+    [code in ErrorStatus]?: Exclude<RouteValue<C>, MethodRoutes<C>>;
+  };
 
 export class Router<C extends Context> implements RouterInterface<C> {
-  readonly routes: Routes<C>;
+  readonly routes: Omit<Routes<C>, ErrorStatus>;
+  readonly errors: Omit<Routes<C>, PathString>;
 
   constructor(routes: Routes<C>) {
     this.routes = routes;
+    this.errors = routes;
   }
 
   exec(request: Request) {
+    const { search, pathname } = new URL(request.url);
+
+    const startTime = Date.now();
+
+    for (const route of getKeys(this.routes)) {
+      const pattern = new URLPattern({ pathname: route });
+      const params = pattern.exec({ pathname })?.pathname.groups;
+
+      if (pattern.test({ pathname })) {
+        const value = this.routes[route];
+
+        if (MethodRoutes.guard(value)) {
+          for (const method of getKeys(value)) {
+            if (method === request.method) {
+              const result = value[method] as ResponseLike | RouteHandler<C>;
+              return castHandler<C>(result, pathname as PathString, params);
+            }
+          }
+        } else {
+          return castHandler(value, pathname as PathString, params);
+        }
+      }
+    }
+
+    console.log(
+      `${request.method} ${pathname + search} ${Date.now() - startTime}ms`,
+    );
+
+    if (this.errors[404]) {
+      return castHandler(this.errors[404], pathname as PathString);
+    } else {
+      throw Error("Route Not Found");
+    }
   }
 }
 
-// export class Router {
-//   readonly routes: Routes;
-//   readonly errors: Pick<Errors, 404 | 500> & Partial<Errors>;
+function castHandler<C extends Context>(
+  value: RouteHandler<C> | ResponseLike,
+  pathname: PathString,
+  params?: PathParams,
+): ReturnType<RouterInterface<C>["exec"]> {
+  return RouteHandler.guard(value)
+    ? (...args: Arguments<Handler<C>>) =>
+      value({ ...args, path: pathname, params: params ?? {} })
+    : value;
+}
 
-//   constructor(rest: Rest) {
-//     this.routes = rest as Routes;
+type PathString = `/${string}`;
+type PathParams = Record<string, string>;
 
-//     const errors = rest as Partial<Errors>;
-//     this.errors = {
-//       ...errors,
-//       404: errors[404] ?? defaultNotFoundHandler,
-//       500: errors[500] ?? defaultErrorHandler,
-//     };
-//   }
+const methods = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
+type Method = typeof methods[number];
 
-//   exec(request: Request) {
-//     const { search, pathname } = new URL(request.url);
+export const Method = {
+  guard(str: string): str is Method {
+    return methods.some((method) => method === str);
+  },
+};
 
-//     const startTime = Date.now();
+type RouteValue<C extends Context> =
+  | MethodRoutes<C>
+  | RouteHandler<C>
+  | ResponseLike;
 
-//     for (const route of Object.keys(this.routes)) {
-//       const pattern = new URLPattern({ pathname: route });
-//       const params = pattern.exec({ pathname })?.pathname.groups;
+type MethodRoutes<C extends Context> = PickAny<
+  {
+    [M in Method]: RouteHandler<C> | ResponseLike | Response;
+  }
+>;
 
-//       if (pattern.test({ pathname })) {
-//         const routed = this.routes[route as PathString];
+const MethodRoutes = {
+  guard<C extends Context>(
+    value: RouteValue<C>,
+  ): value is MethodRoutes<C> {
+    return typeof value !== "function" && !(value instanceof Response) &&
+      getKeys(value).every(Method.guard);
+  },
+};
 
-//         if (MethodRoutes.guard(routed)) {
-//           const methodRoutes = routed;
+type RouteHandler<C extends Context> = (
+  args: Arguments<Handler<C>> & { params: PathParams; path: PathString },
+) => ResponseLike;
 
-//           for (const method of Object.keys(methodRoutes)) {
-//             if (method === request.method) {
-//               const routed = methodRoutes[method as Method] as
-//                 | RouterHandler
-//                 | ResponseObject;
-//               return createWorkerHandler(routed, pathname, params);
-//             }
-//           }
-//         } else {
-//           return createWorkerHandler(routed, pathname, params);
-//         }
-//       }
-//     }
-
-//     console.log(
-//       `${request.method} ${pathname + search} ${Date.now() - startTime}ms`,
-//     );
-
-//     throw new NotFound();
-//   }
-// }
+const RouteHandler = {
+  guard<C extends Context>(
+    value: RouteValue<C>,
+  ): value is RouteHandler<C> {
+    return typeof value === "function";
+  },
+};

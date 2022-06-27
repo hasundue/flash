@@ -1,4 +1,4 @@
-import { flare, WorkerRouteHandler } from "../mod.ts";
+import { fetcher, flare, WorkerRouteHandler } from "../mod.ts";
 import {
   DurableObjectNamespace,
   DurableObjectState,
@@ -15,5 +15,10 @@ export default flare({});
 
 const handler: WorkerRouteHandler = ({ env }) => env.DATA_STACK;
 
-export class DataStack {
+export class DataStack implements DurableObjectStub {
+  fetch = fetcher({
+    "/": {
+      GET: "test",
+    },
+  });
 }

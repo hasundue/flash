@@ -29,8 +29,23 @@ type DurableObjectHandler = (
   init?: RequestInit,
 ) => Response | Promise<Response>;
 
+export type HandlerArgs<C extends Context> = C extends Worker
+  ? WorkerHandlerArgs
+  : DurableObjectHandlerArgs;
+
+type WorkerHandlerArgs = {
+  request: WorkerRequest;
+  env: WorkerEnv;
+  context: WorkerContext;
+};
+
+type DurableObjectHandlerArgs = {
+  request: Request;
+  init?: RequestInit;
+};
+
 export type HandlerLike<C extends Context> = (
-  ...args: Parameters<Handler<C>>
+  args: HandlerArgs<C>,
 ) => ResponseLike | Promise<ResponseLike>;
 
 export interface FormatterMethods {
@@ -51,7 +66,7 @@ export function flare(flash: Flash<Worker>): {
     fetch: async (request, env, context) => {
       const value = router(request);
       const precursor = typeof value === "function"
-        ? await value(request, env, context)
+        ? await value({ request, env, context })
         : value;
       return formatter(precursor);
     },
@@ -66,7 +81,7 @@ export function fetcher(
   return async (request, init?) => {
     const value = router.call(request);
     const precursor = typeof value === "function"
-      ? await value(request, init)
+      ? await value({ request, init })
       : value;
     return formatter(precursor);
   };

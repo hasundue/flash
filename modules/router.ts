@@ -1,13 +1,7 @@
 import { ErrorStatus } from "../deps.ts";
 import { getKeys, getObject, PickAny } from "./types.ts";
 
-import {
-  Context,
-  DurableObject,
-  Handler,
-  HandlerLike,
-  Worker,
-} from "../mod.ts";
+import { Context, HandlerArgs, HandlerLike } from "../mod.ts";
 import { ResponseLike } from "./response.ts";
 
 export type Routes<C extends Context> =
@@ -43,11 +37,15 @@ export class Router<C extends Context> {
           for (const method of getKeys(value)) {
             if (method === request.method) {
               const result = value[method] as ResponseLike | RouteHandler<C>;
-              return castHandler<C>(result, pathname as PathString, params);
+              return this.castHandler<C>(
+                result,
+                pathname as PathString,
+                params,
+              );
             }
           }
         } else {
-          return castHandler(value, pathname as PathString, params);
+          return this.castHandler(value, pathname as PathString, params);
         }
       }
     }
@@ -57,27 +55,26 @@ export class Router<C extends Context> {
     );
 
     if (this.errors[404]) {
-      return castHandler(this.errors[404], pathname as PathString, {});
+      return this.castHandler(this.errors[404], pathname as PathString, {});
     } else {
       throw Error("Route Not Found");
     }
+  }
+
+  private castHandler<C extends Context>(
+    value: Exclude<RouteValue<C>, MethodRoutes<C>>,
+    pathname: PathString,
+    params: PathParams | undefined,
+    key?: keyof Routes<C>,
+  ): ReturnType<Router<C>> {
+    return RouteHandler.guard(value)
+      ? (args) => value({ ...args, path: pathname, params: params ?? {} })
+      : getResponseLike<C>(key, value);
   }
 }
 
 export interface Router<C extends Context> {
   (request: Request): HandlerLike<C> | ResponseLike;
-}
-
-function castHandler<C extends Context>(
-  value: Exclude<RouteValue<C>, MethodRoutes<C>>,
-  pathname: PathString,
-  params: PathParams | undefined,
-  key?: keyof Routes<C>,
-): ReturnType<Router<C>> {
-  return RouteHandler.guard(value)
-    ? (...args: Parameters<Handler<C>>) =>
-      value({ ...args, path: pathname, params: params ?? {} })
-    : getResponseLike<C>(key, value);
 }
 
 function getResponseLike<C extends Context>(
@@ -127,21 +124,12 @@ const MethodRoutes = {
 };
 
 type RouteHandler<C extends Context> = (
-  args: RouterHandlerArgs<C> & {
-    params: PathParams;
+  args: HandlerArgs<C> & {
     path: PathString;
+    params: PathParams;
+    error?: Error;
   },
 ) => ResponseLike;
-
-type RouterHandlerArgs<C extends Context> = C extends Worker ? {
-  request: Parameters<Handler<Worker>>[0];
-  env: Parameters<Handler<Worker>>[1];
-  context: Parameters<Handler<Worker>>[2];
-}
-  : {
-    request: Parameters<Handler<DurableObject>>[0];
-    init?: Parameters<Handler<DurableObject>>[1];
-  };
 
 const RouteHandler = {
   guard<C extends Context>(

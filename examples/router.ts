@@ -32,11 +32,12 @@ export default flare({
 
   // [404 Not Found] { message: "URL not exist" }
   404: "Request URL or method is not available.",
+
   // [500 Internal Server Error] { message: "Unexpected error occured.", stack: "..." }
-  // 500: ({ error }) => ({
-  //   message: "Unexpected error occured.",
-  //   stack: error.stack,
-  // }),
+  500: ({ error }) => ({
+    message: "Unexpected error occured.",
+    stack: error.stack,
+  }),
 });
 
 // deno-lint-ignore no-explicit-any

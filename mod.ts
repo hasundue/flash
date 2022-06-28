@@ -2,7 +2,6 @@ import type { IncomingRequestCf, ModuleWorkerContext } from "./deps.ts";
 
 import { Router, Routes } from "./modules/router.ts";
 import { ResponseLike } from "./modules/response.ts";
-import { Arguments } from "./modules/types.ts";
 import { FormatInit, Formatter } from "./modules/formatter.ts";
 
 export interface WorkerEnv {
@@ -13,8 +12,8 @@ type WorkerContext = ModuleWorkerContext;
 
 export type Context = Worker | DurableObject;
 
-type Worker = "Worker";
-type DurableObject = "DurableObject";
+export type Worker = "Worker";
+export type DurableObject = "DurableObject";
 
 export type Handler<C extends Context> = C extends Worker ? WorkerHandler
   : DurableObjectHandler;
@@ -31,7 +30,7 @@ type DurableObjectHandler = (
 ) => Response | Promise<Response>;
 
 export type HandlerLike<C extends Context> = (
-  ...args: Arguments<Handler<C>>
+  ...args: Parameters<Handler<C>>
 ) => ResponseLike | Promise<ResponseLike>;
 
 export interface FormatterMethods {

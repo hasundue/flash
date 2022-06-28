@@ -1,8 +1,13 @@
 import { ErrorStatus } from "../deps.ts";
-import type { Arguments } from "./types.ts";
 import { getKeys, getObject, PickAny } from "./types.ts";
 
-import { Context, Handler, HandlerLike } from "../mod.ts";
+import {
+  Context,
+  DurableObject,
+  Handler,
+  HandlerLike,
+  Worker,
+} from "../mod.ts";
 import { ResponseLike } from "./response.ts";
 
 export type Routes<C extends Context> =
@@ -70,7 +75,7 @@ function castHandler<C extends Context>(
   key?: keyof Routes<C>,
 ): ReturnType<Router<C>> {
   return RouteHandler.guard(value)
-    ? (...args: Arguments<Handler<C>>) =>
+    ? (...args: Parameters<Handler<C>>) =>
       value({ ...args, path: pathname, params: params ?? {} })
     : getResponseLike<C>(key, value);
 }
@@ -122,8 +127,21 @@ const MethodRoutes = {
 };
 
 type RouteHandler<C extends Context> = (
-  args: Arguments<Handler<C>> & { params: PathParams; path: PathString },
+  args: RouterHandlerArgs<C> & {
+    params: PathParams;
+    path: PathString;
+  },
 ) => ResponseLike;
+
+type RouterHandlerArgs<C extends Context> = C extends Worker ? {
+  request: Parameters<Handler<Worker>>[0];
+  env: Parameters<Handler<Worker>>[1];
+  context: Parameters<Handler<Worker>>[2];
+}
+  : {
+    request: Parameters<Handler<DurableObject>>[0];
+    init?: Parameters<Handler<DurableObject>>[1];
+  };
 
 const RouteHandler = {
   guard<C extends Context>(

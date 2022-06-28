@@ -1,6 +1,6 @@
-import { rest } from "../mod.ts";
+import { flare } from "../mod.ts";
 
-export default rest({
+export default flare({
   "/": {
     // [200 OK] { message: "Welcome to flash!" }
     GET: "Welcome to flash!",
@@ -31,13 +31,12 @@ export default rest({
   },
 
   // [404 Not Found] { message: "URL not exist" }
-  404: ({ message: "URL not exist." }),
-
+  404: "Request URL or method is not available.",
   // [500 Internal Server Error] { message: "Unexpected error occured.", stack: "..." }
-  500: ({ error }) => ({
-    message: "Unexpected error occured.",
-    stack: error.stack,
-  }),
+  // 500: ({ error }) => ({
+  //   message: "Unexpected error occured.",
+  //   stack: error.stack,
+  // }),
 });
 
 // deno-lint-ignore no-explicit-any

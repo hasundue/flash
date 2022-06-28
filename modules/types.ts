@@ -11,11 +11,6 @@ export type PickAny<T> = T extends Record<string, (infer S)> ? {
 }[keyof T]
   : never;
 
-// deno-lint-ignore no-explicit-any
-export type Arguments<T extends (...args: any) => any> = {
-  [K in keyof Parameters<T>]: Parameters<T>[K];
-};
-
 export function getKeys<T extends string | number | symbol>(
   object: Partial<Record<T, unknown>>,
 ) {

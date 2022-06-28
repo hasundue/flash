@@ -16,6 +16,32 @@ export type Arguments<T extends (...args: any) => any> = {
   [K in keyof Parameters<T>]: Parameters<T>[K];
 };
 
-export function getKeys<T extends string>(object: PickAny<Record<T, unknown>>) {
+export function getKeys<T extends string | number | symbol>(
+  object: Partial<Record<T, unknown>>,
+) {
   return Object.keys(object) as T[];
+}
+
+export function getKey<T extends string | number | symbol>(
+  object: PickOne<Record<T, unknown>>,
+) {
+  return Object.keys(object)[0] as T;
+}
+
+export function getValues<
+  T extends string | number | symbol,
+  S extends unknown,
+>(
+  object: Record<T, S>,
+) {
+  return Object.values(object) as S[];
+}
+
+export function getObject<
+  K extends string | number | symbol,
+  V extends unknown,
+>(
+  entries: [K, V][],
+) {
+  return Object.fromEntries(entries) as Record<K, V>;
 }

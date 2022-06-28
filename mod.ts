@@ -3,6 +3,7 @@ import type { IncomingRequestCf, ModuleWorkerContext } from "./deps.ts";
 import { Router, Routes } from "./modules/router.ts";
 import { ResponseLike } from "./modules/response.ts";
 import { Arguments } from "./modules/types.ts";
+import { FormatInit, Formatter } from "./modules/formatter.ts";
 
 export interface WorkerEnv {
 }
@@ -29,23 +30,27 @@ type DurableObjectHandler = (
   init?: RequestInit,
 ) => Response | Promise<Response>;
 
-export interface RouterInterface<C extends Context> {
-  exec: (request: Request) => HandlerLike<C> | ResponseLike;
-}
-
 export type HandlerLike<C extends Context> = (
   ...args: Arguments<Handler<C>>
 ) => ResponseLike | Promise<ResponseLike>;
 
-type Formatter = (precursor: ResponseLike) => Response;
+export interface FormatterMethods {
+  exec: (precursor: ResponseLike) => Response;
+}
 
-export function flare(routes: Routes<Worker>, formatter: Formatter): {
+export type Flash<C extends Context> = Routes<C> & { format?: FormatInit };
+
+export function flare(flash: Flash<Worker>): {
   fetch: WorkerHandler;
 } {
+  const { format, ...routes } = flash;
+
   const router = new Router(routes);
+  const formatter = new Formatter(format);
+
   return {
     fetch: async (request, env, context) => {
-      const value = router.exec(request);
+      const value = router(request);
       const precursor = typeof value === "function"
         ? await value(request, env, context)
         : value;
@@ -60,7 +65,7 @@ export function fetcher(
 ): DurableObjectHandler {
   const router: Router<DurableObject> = new Router(routes);
   return async (request, init?) => {
-    const value = router.exec(request);
+    const value = router.call(request);
     const precursor = typeof value === "function"
       ? await value(request, init)
       : value;

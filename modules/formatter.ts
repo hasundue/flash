@@ -1,46 +1,93 @@
-import { Status, STATUS_TEXT } from "../deps.ts";
-import { ErrorResponse, ResponseObject, SuccessResponse } from "./response.ts";
+import { ErrorStatus, Status, STATUS_TEXT, SuccessStatus } from "../deps.ts";
+import { getKey, getKeys, getObject, getValues, PickOne } from "./types.ts";
+import { ResponseLike } from "./response.ts";
 
-export type Formatter = (response: ResponseObject, status?: Status) => Response;
+type Format = { message: true };
 
-export const defaultFormatter: Formatter = (res, sta) => {
-  const precursor = SuccessResponse.guard(res) || ErrorResponse.guard(res)
-    ? Object.values(res)[0]
-    : res;
+const Format = {
+  message: { message: true } as const,
 
-  const status = sta ?? (
-    SuccessResponse.guard(res) || ErrorResponse.guard(res)
-      ? parseInt(Object.keys(res)[0]) as Status
-      : undefined
-  );
+  guard(obj: Record<string, unknown>): obj is Format {
+    return getKeys(obj).every((key) =>
+      getKeys(Format.message).some((field) => field === key)
+    );
+  },
+};
 
-  if (typeof precursor === "object" && !Array.isArray(precursor)) {
-    const { statusText, headers, ...value }: {
-      statusText?: string;
-      headers?: Headers;
-      value: Record<string, unknown>;
-    } = precursor;
-
-    const init = {
-      statusText: statusText ??
-        (status ? STATUS_TEXT[status] : STATUS_TEXT[Status.OK]),
-      status: status ?? Status.OK,
-      headers: headers instanceof Headers ? headers : new Headers(headers),
+export type FormatInit =
+  | Format
+  | {
+    success?: Format;
+    error?: Format;
+  }
+    & {
+      [P in Status]?: Format;
     };
 
-    if (!init.headers.has("Content-Type")) {
-      init.headers.set("Content-Type", "application/json; charset=utf-8");
+export class Formatter {
+  private readonly spec: { [P in Status]?: Format };
+
+  constructor(init?: FormatInit) {
+    this.spec = {};
+
+    if (!init) return;
+
+    const statuss = getValues(Status);
+
+    if (Format.guard(init)) {
+      const entries = statuss.map((
+        key,
+      ): [Status, Format] => [key, Format.message]);
+
+      this.spec = getObject(entries);
+      return;
     }
 
-    return new Response(JSON.stringify(value) + "\n", init);
-  } else {
-    const init = {
-      statusText: status ? STATUS_TEXT[status] : STATUS_TEXT[Status.OK],
-      status: status ?? Status.OK,
-      headers: new Headers(),
-    };
-    init.headers.set("Content-Type", "application/json; charset=utf-8");
+    if (init.success) {
+      const entries = statuss.filter((status) => status < 400).map((
+        key,
+      ) => [key, Format.message] as [SuccessStatus, Format]);
 
-    return new Response(JSON.stringify(precursor) + "\n", init);
+      this.spec = getObject(entries);
+    }
+
+    if (init.error) {
+      const entries = statuss.filter((status) => status >= 400).map((
+        key,
+      ) => [key, Format.message] as [ErrorStatus, Format]);
+
+      this.spec = getObject(entries);
+    }
+
+    for (const status of getKeys(init)) {
+      if (status === "success" || status === "error") continue;
+      this.spec[status] = init[status];
+    }
   }
-};
+
+  call(precursor: ResponseLike): Response {
+    if (precursor instanceof Response) {
+      return precursor;
+    }
+    const statusAndBody: PickOne<{ [P in Status]: unknown }> = precursor;
+    const status = getKey(statusAndBody);
+    const body = statusAndBody[status];
+    const format = this.spec[status];
+    const { headers, statusText }: Omit<ResponseInit, "status"> = precursor;
+
+    return new Response(
+      format?.message && typeof body === "string"
+        ? JSON.stringify({ message: body })
+        : JSON.stringify(body),
+      {
+        headers: headers instanceof Headers ? headers : new Headers(headers),
+        status,
+        statusText: statusText ?? STATUS_TEXT[status],
+      },
+    );
+  }
+}
+
+export interface Formatter {
+  (precursor: ResponseLike): Response;
+}

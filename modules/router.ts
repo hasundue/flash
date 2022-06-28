@@ -1,8 +1,8 @@
 import { ErrorStatus } from "../deps.ts";
 import type { Arguments } from "./types.ts";
-import { getKeys, PickAny } from "./types.ts";
+import { getKeys, getObject, PickAny } from "./types.ts";
 
-import { Context, Handler, RouterInterface } from "../mod.ts";
+import { Context, Handler, HandlerLike } from "../mod.ts";
 import { ResponseLike } from "./response.ts";
 
 export type Routes<C extends Context> =
@@ -13,16 +13,16 @@ export type Routes<C extends Context> =
     [code in ErrorStatus]?: Exclude<RouteValue<C>, MethodRoutes<C>>;
   };
 
-export class Router<C extends Context> implements RouterInterface<C> {
-  readonly routes: Omit<Routes<C>, ErrorStatus>;
-  readonly errors: Omit<Routes<C>, PathString>;
+export class Router<C extends Context> {
+  private readonly routes: Omit<Routes<C>, ErrorStatus>;
+  private readonly errors: Omit<Routes<C>, PathString>;
 
   constructor(routes: Routes<C>) {
     this.routes = routes;
     this.errors = routes;
   }
 
-  exec(request: Request) {
+  call(request: Request) {
     const { search, pathname } = new URL(request.url);
 
     const startTime = Date.now();
@@ -52,22 +52,38 @@ export class Router<C extends Context> implements RouterInterface<C> {
     );
 
     if (this.errors[404]) {
-      return castHandler(this.errors[404], pathname as PathString);
+      return castHandler(this.errors[404], pathname as PathString, {});
     } else {
       throw Error("Route Not Found");
     }
   }
 }
 
+export interface Router<C extends Context> {
+  (request: Request): HandlerLike<C> | ResponseLike;
+}
+
 function castHandler<C extends Context>(
-  value: RouteHandler<C> | ResponseLike,
+  value: Exclude<RouteValue<C>, MethodRoutes<C>>,
   pathname: PathString,
-  params?: PathParams,
-): ReturnType<RouterInterface<C>["exec"]> {
+  params: PathParams | undefined,
+  key?: keyof Routes<C>,
+): ReturnType<Router<C>> {
   return RouteHandler.guard(value)
     ? (...args: Arguments<Handler<C>>) =>
       value({ ...args, path: pathname, params: params ?? {} })
-    : value;
+    : getResponseLike<C>(key, value);
+}
+
+function getResponseLike<C extends Context>(
+  key: keyof Routes<C> | undefined,
+  value: string | Record<string, unknown> | ResponseLike,
+): ResponseLike {
+  if (typeof value !== "string" && ResponseLike.guard(value)) return value;
+
+  return getObject([
+    [key ?? 200, value],
+  ]);
 }
 
 type PathString = `/${string}`;
@@ -77,7 +93,7 @@ const methods = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 type Method = typeof methods[number];
 
 export const Method = {
-  guard(str: string): str is Method {
+  guard(str: string | number | symbol): str is Method {
     return methods.some((method) => method === str);
   },
 };
@@ -85,7 +101,9 @@ export const Method = {
 type RouteValue<C extends Context> =
   | MethodRoutes<C>
   | RouteHandler<C>
-  | ResponseLike;
+  | ResponseLike
+  | Record<string, unknown>
+  | string;
 
 type MethodRoutes<C extends Context> = PickAny<
   {
@@ -97,7 +115,8 @@ const MethodRoutes = {
   guard<C extends Context>(
     value: RouteValue<C>,
   ): value is MethodRoutes<C> {
-    return typeof value !== "function" && !(value instanceof Response) &&
+    return typeof value !== "function" && typeof value !== "string" &&
+      !(value instanceof Response) &&
       getKeys(value).every(Method.guard);
   },
 };

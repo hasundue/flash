@@ -5,7 +5,7 @@ export type {
 
 export type {
   ErrorStatus,
-  SuccessfulStatus,
+  SuccessfulStatus as SuccessStatus,
 } from "https://deno.land/std@0.144.0/http/http_status.ts";
 
 export {

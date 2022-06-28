@@ -36,7 +36,7 @@ export default flare({
   // [500 Internal Server Error] { message: "Unexpected error occured.", stack: "..." }
   500: ({ error }) => ({
     message: "Unexpected error occured.",
-    stack: error.stack,
+    stack: error?.stack,
   }),
 });
 

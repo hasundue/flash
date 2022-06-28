@@ -55,7 +55,12 @@ export class Router<C extends Context> {
     );
 
     if (this.errors[404]) {
-      return this.castHandler(this.errors[404], pathname as PathString, {});
+      return this.castHandler(
+        this.errors[404],
+        pathname as PathString,
+        {},
+        404,
+      );
     } else {
       throw Error("Route Not Found");
     }
@@ -68,7 +73,11 @@ export class Router<C extends Context> {
     key?: keyof Routes<C>,
   ): ReturnType<Router<C>> {
     return RouteHandler.guard(value)
-      ? (args) => value({ ...args, path: pathname, params: params ?? {} })
+      ? async (args) =>
+        getResponseLike<C>(
+          key,
+          await value({ ...args, path: pathname, params: params ?? {} }),
+        )
       : getResponseLike<C>(key, value);
   }
 }
@@ -129,7 +138,12 @@ type RouteHandler<C extends Context> = (
     params: PathParams;
     error?: Error;
   },
-) => ResponseLike;
+) => RouteHandlerReturnType<C> | Promise<RouteHandlerReturnType<C>>;
+
+type RouteHandlerReturnType<C extends Context> = Exclude<
+  RouteValue<C>,
+  MethodRoutes<C> | RouteHandler<C>
+>;
 
 const RouteHandler = {
   guard<C extends Context>(

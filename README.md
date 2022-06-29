@@ -1,6 +1,7 @@
 # flash
 
-Flash is a progressive web framework in TypeScript, particularly optimized for building REST APIs on serverless platforms with Deno.
+Flash is a progressive web framework in TypeScript, particularly optimized for
+building REST APIs on serverless platforms with Deno.
 
 > :warning: Do not use Flash for production use yet, unless you are a
 > contributor to the framework.

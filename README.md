@@ -1,13 +1,25 @@
 # flash
 
-Flash is a framework to build REST APIs with [Deno](https://deno.land/) and
-[Cloudflare Workers](https://www.cloudflare.com/products/workers-kv/)
-([Denoflare](https://denoflare.dev/))
+Flash is a progressive web framework in TypeScript, particularly optimized for building REST APIs on serverless platforms with Deno.
 
 > :warning: Do not use Flash for production use yet, unless you are a
 > contributor to the framework.
 
+## Key Features
+
+- **Multi Environment**
+  - Runtime
+    - Deno
+    - Node.js (coming soon...)
+  - Platform
+    - [Cloudflare Workers](https://www.cloudflare.com/products/workers-kv/)
+    - Deno Deploy (coming soon...)
+
+- **Declarative interface**
+
 ## Usage
+
+### Cloudflare Workers
 
 Create a worker module file:
 
@@ -15,52 +27,18 @@ Create a worker module file:
 // index.ts
 import { flare } from "https://deno.land/x/flash/mod.ts";
 
-export default flare({
-  "/": {
-    // [200 OK] "Welcome to flash!"
-    GET: "Welcome to flash!",
-  },
-
-  "/users": {
-    POST: async ({ request }) => {
-      const user = await createUser(request.body);
-
-      // [500 Internal Server Error] { message: "Failed in creating a user." }
-      if (!user) return { 500: "Failed in creating a user." };
-
-      // [201 Created] { name: "flash", foo: 1, bar: 2 }
-      return { 201: user };
-    },
-  },
-
-  "/users/:name": {
-    GET: async ({ params }) => {
-      const user = await getUser(params.name);
-
-      // [404 Not Found] { message: "User 'deno' was not found." }
-      if (!user) return { 404: `User '${params.name}' was not found.` };
-
-      // [200 OK] { name: "flare", foo: 1, bar: 2 }
-      return user;
-    },
-  },
-
-  // [404 Not Found] { message: "The requested URL was not found." }
-  404: "The requested URL was not found.",
-
-  // [500 Internal Server Error] { message: "Unexpected error occured.", stack: "..." }
-  500: ({ error }) => ({
-    message: "Unexpected error occured.",
-    stack: error.stack,
-  }),
-});
+export default flare({ "/": "Welcome to flash!" });
 ```
 
-And run with Denoflare!
+And deploy with [Denoflare](https://denoflare.dev/)!
 
 ```sh
-$ denoflare serve index.ts
+$ denoflare push index.ts --name flash-demo
 ```
+
+## Features
+
+Coming soon...
 
 ## Acknowledgment
 

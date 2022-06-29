@@ -11,8 +11,8 @@ building REST APIs on serverless platforms with Deno.
 Flash is designed to be...
 
 - ⚡ ***Efficient*** - frees you from what you don't have to do
-- 💓 ***Flexible*** - lets you do what you want to
-- 🚫 ***Strict*** - prohibits you from doing what you shouldn't
+- 💓 ***Flexible*** - lets you do what you want
+- 🚫 ***Strict*** - prohibits you from doing what you should not
 
 Yes, they are conflicting. But why not try best to achieve all?
 
@@ -25,19 +25,22 @@ Yes, they are conflicting. But why not try best to achieve all?
   - Platform
     - [x] [Cloudflare Workers](https://www.cloudflare.com/products/workers-kv/)
     - [ ] Deno Deploy
+  - Bundler/Emulator
+    - [ ] Wrangler2
+    - [x] Denoflare
 - [x] 🚀 **Progressive API**
-  - [x] Unified interface for the router and error handlers written in a tree structure
+  - [x] Unified interface for routers and middlewares written in a tree structure
   - [x] Polymorphism in handler definition
   - [x] Syntax sugar for responses
   - [x] Smart and customizable response formatter
-- [ ] 🔧 **Full support of Cloudflare Workers**
-  - [ ] Out-of-box middleweres built on Durable Objects
+- [ ] ⛅ **Out-of-box middlewares for Cloudflare Workers**
      - [ ] Object storage associated with each resource URL
      - [ ] Blocking communication among workers
-- [ ] 📕 **Code/Doc Generation**
+- [ ] 📜 **Code/Doc Generation**
   - [ ] Universal Typescript SDK for clients
   - [ ] OpenAPI specs
   - [ ] Seamless hosting of API documents
+- [ ] ✨ **Zero third-party dependencies**
 
 ## Usage
 
@@ -58,7 +61,7 @@ And deploy with [Denoflare](https://denoflare.dev/)!
 $ denoflare push index.ts --name flash-demo
 ```
 
-## Functionalities
+## APIs
 
 ### Routing by URLPattern and methods
 
@@ -66,7 +69,7 @@ $ denoflare push index.ts --name flash-demo
 export default flare({
   "/": "Welcome to flash!", // for all methods
   "/users/:name": {
-    GET: ({ params }) => params.name
+    GET: ({ params }) => params.name,
   },
 }
 ```

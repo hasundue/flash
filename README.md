@@ -3,16 +3,16 @@
 Flash is a progressive web framework in TypeScript, particularly optimized for
 building REST APIs on serverless platforms with Deno.
 
-> :warning: Do not use Flash for production use yet, unless you are a
+> **warning** Do not use Flash for production use yet, unless you are a
 > contributor to the framework.
 
 ## Philosophy
 
 Flash is designed to be...
 
-- ⚡ ***Efficient*** - frees you from what you don't have to do
-- 💓 ***Flexible*** - lets you do what you want
-- 🚫 ***Strict*** - prohibits you from doing what you should not
+- ⚡ _**Efficient**_ - frees you from what you don't have to do
+- 💓 _**Flexible**_ - lets you do what you want
+- 🚫 _**Strict**_ - prohibits you from doing what you should not
 
 Yes, they are conflicting. But why not try best to achieve all?
 
@@ -29,13 +29,14 @@ Yes, they are conflicting. But why not try best to achieve all?
     - [ ] Wrangler2
     - [x] Denoflare
 - [x] 🚀 **Progressive API**
-  - [x] Unified interface for routers and middlewares written in a tree structure
-  - [x] Polymorphism in handler definition
+  - [x] Declarative interface for routers with a tree structure
+  - [x] Error handlers integrated in routers
+  - [x] Polymorphism in handler definitions
   - [x] Syntax sugar for responses
   - [x] Smart and customizable response formatter
 - [ ] ⛅ **Out-of-box middlewares for Cloudflare Workers**
-     - [ ] Object storage associated with each resource URL
-     - [ ] Blocking communication among workers
+  - [ ] Object storage associated with each resource URL
+  - [ ] Blocking communication among workers
 - [ ] 📜 **Code/Doc Generation**
   - [ ] Universal Typescript SDK for clients
   - [ ] OpenAPI specs

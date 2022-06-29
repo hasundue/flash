@@ -3,8 +3,9 @@
 Flash is a progressive web framework in TypeScript, particularly optimized for
 building REST APIs on serverless platforms with Deno.
 
-> **warning** Do not use Flash for production use yet, unless you are a
-> contributor to the framework.
+> **Warning**\
+> Do not use Flash for production use yet, unless you are a contributor to the
+> framework.
 
 ## Philosophy
 
@@ -23,7 +24,7 @@ Yes, they are conflicting. But why not try best to achieve all?
     - [x] Deno
     - [ ] Node.js
   - Platform
-    - [x] [Cloudflare Workers](https://www.cloudflare.com/products/workers-kv/)
+    - [x] [Cloudflare Workers](https://workers.cloudflare.com/)
     - [ ] Deno Deploy
   - Bundler/Emulator
     - [ ] Wrangler2

@@ -10,8 +10,8 @@ building REST APIs on serverless platforms with Deno.
 
 Flash is designed to be...
 
-- ⚡ ***Efficient*** - frees you from what you don't have to
-- 💓 ***Flexible*** - lets you do what you want
+- ⚡ ***Efficient*** - frees you from what you don't have to do
+- 💓 ***Flexible*** - lets you do what you want to
 - 🚫 ***Strict*** - prohibits you from doing what you shouldn't
 
 Yes, they are conflicting. But why not try best to achieve all?
@@ -24,8 +24,20 @@ Yes, they are conflicting. But why not try best to achieve all?
     - [ ] Node.js
   - Platform
     - [x] [Cloudflare Workers](https://www.cloudflare.com/products/workers-kv/)
-    - [ ] Deno Deploy (coming soon...)
-- And more...
+    - [ ] Deno Deploy
+- [x] 🚀 **Progressive API**
+  - [x] Unified interface for the router and error handlers written in a tree structure
+  - [x] Polymorphism in handler definition
+  - [x] Syntax sugar for responses
+  - [x] Smart and customizable response formatter
+- [ ] 🔧 **Full support of Cloudflare Workers**
+  - [ ] Out-of-box middleweres built on Durable Objects
+     - [ ] Object storage associated with each resource URL
+     - [ ] Blocking communication among workers
+- [ ] 📕 **Code/Doc Generation**
+  - [ ] Universal Typescript SDK for clients
+  - [ ] OpenAPI specs
+  - [ ] Seamless hosting of API documents
 
 ## Usage
 
@@ -46,9 +58,20 @@ And deploy with [Denoflare](https://denoflare.dev/)!
 $ denoflare push index.ts --name flash-demo
 ```
 
-## Features
+## Functionalities
 
-Coming soon...
+### Routing by URLPattern and methods
+
+```typescript
+export default flare({
+  "/": "Welcome to flash!", // for all methods
+  "/users/:name": {
+    GET: ({ params }) => params.name
+  },
+}
+```
+
+### And more...
 
 ## Acknowledgment
 

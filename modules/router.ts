@@ -1,7 +1,7 @@
 import { ErrorStatus } from "../deps.ts";
 import { getKeys, getObject, PickAny } from "./types.ts";
 
-import { Context, HandlerArgs, HandlerLike } from "../mod.ts";
+import { Context, HandlerArgs, HandlerLike, RouterMethods } from "../mod.ts";
 import { ResponseLike } from "./response.ts";
 
 export type Routes<C extends Context> =
@@ -12,7 +12,7 @@ export type Routes<C extends Context> =
     [code in ErrorStatus]?: Exclude<RouteValue<C>, MethodRoutes<C>>;
   };
 
-export class Router<C extends Context> {
+export class Router<C extends Context> implements RouterMethods<C> {
   private readonly routes: Omit<Routes<C>, ErrorStatus>;
   private readonly errors: Omit<Routes<C>, PathString>;
 
@@ -21,7 +21,7 @@ export class Router<C extends Context> {
     this.errors = routes;
   }
 
-  call(request: Request) {
+  route(request: Request) {
     const { search, pathname } = new URL(request.url);
 
     const startTime = Date.now();
@@ -71,7 +71,7 @@ export class Router<C extends Context> {
     pathname: PathString,
     params: PathParams | undefined,
     key?: keyof Routes<C>,
-  ): ReturnType<Router<C>> {
+  ): ResponseLike | HandlerLike<C> {
     return RouteHandler.guard(value)
       ? async (args) =>
         getResponseLike<C>(
@@ -80,10 +80,6 @@ export class Router<C extends Context> {
         )
       : getResponseLike<C>(key, value);
   }
-}
-
-export interface Router<C extends Context> {
-  (request: Request): HandlerLike<C> | ResponseLike;
 }
 
 function getResponseLike<C extends Context>(

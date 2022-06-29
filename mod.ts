@@ -4,6 +4,7 @@ import { Router, Routes } from "./modules/router.ts";
 import { ResponseLike } from "./modules/response.ts";
 import { FormatInit, Formatter } from "./modules/formatter.ts";
 
+// deno-lint-ignore no-empty-interface
 export interface WorkerEnv {
 }
 
@@ -49,7 +50,11 @@ export type HandlerLike<C extends Context> = (
 ) => ResponseLike | Promise<ResponseLike>;
 
 export interface FormatterMethods {
-  exec: (precursor: ResponseLike) => Response;
+  format: (precursor: ResponseLike) => Response;
+}
+
+export interface RouterMethods<C extends Context> {
+  route: (request: Request) => ResponseLike | HandlerLike<C>;
 }
 
 export type Flash<C extends Context> = Routes<C> & { format?: FormatInit };
@@ -64,11 +69,11 @@ export function flare(flash: Flash<Worker>): {
 
   return {
     fetch: async (request, env, context) => {
-      const value = router(request);
+      const value = router.route(request);
       const precursor = typeof value === "function"
         ? await value({ request, env, context })
         : value;
-      return formatter(precursor);
+      return formatter.format(precursor);
     },
   };
 }
@@ -79,10 +84,10 @@ export function fetcher(
 ): DurableObjectHandler {
   const router: Router<DurableObject> = new Router(routes);
   return async (request, init?) => {
-    const value = router.call(request);
+    const value = router.route(request);
     const precursor = typeof value === "function"
       ? await value({ request, init })
       : value;
-    return formatter(precursor);
+    return formatter.format(precursor);
   };
 }

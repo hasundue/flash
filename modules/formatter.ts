@@ -1,4 +1,5 @@
 import { ErrorStatus, Status, STATUS_TEXT, SuccessStatus } from "../deps.ts";
+import { FormatterMethods } from "../mod.ts";
 import { getKey, getKeys, getObject, getValues, PickOne } from "./types.ts";
 import { ResponseLike } from "./response.ts";
 
@@ -24,7 +25,7 @@ export type FormatInit =
       [P in Status]?: Format;
     };
 
-export class Formatter {
+export class Formatter implements FormatterMethods {
   private readonly spec: { [P in Status]?: Format };
 
   constructor(init?: FormatInit) {
@@ -65,7 +66,7 @@ export class Formatter {
     }
   }
 
-  call(precursor: ResponseLike): Response {
+  format(precursor: ResponseLike): Response {
     if (precursor instanceof Response) {
       return precursor;
     }
@@ -86,8 +87,4 @@ export class Formatter {
       },
     );
   }
-}
-
-export interface Formatter {
-  (precursor: ResponseLike): Response;
 }

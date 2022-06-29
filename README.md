@@ -13,9 +13,9 @@ Create a worker module file:
 
 ```typescript
 // index.ts
-import { rest } from "https://deno.land/x/flash/mod.ts";
+import { flare } from "https://deno.land/x/flash/mod.ts";
 
-export default rest({
+export default flare({
   "/": {
     // [200 OK] "Welcome to flash!"
     GET: "Welcome to flash!",

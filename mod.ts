@@ -28,7 +28,7 @@ type WorkerHandler = (
 type DurableObjectHandler = (
   request: Request,
   init?: RequestInit,
-) => Response | Promise<Response>;
+) => Promise<Response>;
 
 export type HandlerArgs<C extends Context> = C extends Worker
   ? WorkerHandlerArgs
@@ -78,11 +78,12 @@ export function flare(flash: Flash<Worker>): {
   };
 }
 
-export function fetcher(
-  routes: Routes<DurableObject>,
-  formatter: Formatter,
-): DurableObjectHandler {
-  const router: Router<DurableObject> = new Router(routes);
+export function fetcher(flash: Flash<DurableObject>): DurableObjectHandler {
+  const { format, ...routes } = flash;
+
+  const router = new Router(routes);
+  const formatter = new Formatter(format);
+
   return async (request, init?) => {
     const value = router.route(request);
     const precursor = typeof value === "function"

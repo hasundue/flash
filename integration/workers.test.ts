@@ -8,63 +8,87 @@ async function startServer(file: string, ...options: string[]) {
   const proc = Deno.run({
     cmd: ["denoflare", "serve", file].concat(options),
     stdout: "piped",
+    stderr: "inherit",
   });
 
   for await (const line of readLines(proc.stdout)) {
     if (line.match("Local server running")) break;
   }
 
+  // proc.stdout.readable.pipeTo(Deno.stdout.writable);
+
   return proc;
 }
 
-const assert = async (
-  path: string,
-  method: string,
-  status: number,
-  value?: Record<string, unknown> | string,
-) => {
-  const host = "http://localhost:8080";
+const host = "http://localhost:8080";
 
-  const response = await fetch(host + path, { method: method });
-  assertEquals(response.status, status);
+Deno.test("router", async (t) => {
+  const test = async (
+    request: {
+      path: string;
+      method: string;
+      body?: Record<string, unknown>;
+    },
+    expect: {
+      status: number;
+      value?: Record<string, unknown> | string;
+    },
+  ) => {
+    const { path, method, body } = request;
+    const { status, value } = expect;
 
-  const json = await response.json();
-  if (value) {
-    if (typeof value === "string") assertEquals(json, value);
-    else assertObjectMatch(json, value);
-  }
-};
+    const str = body ? JSON.stringify(body) : "";
 
-Deno.test("router", async () => {
-  const proc = await startServer("../integration/worker.test.ts");
+    await t.step(
+      `${method}\t${path}\t${str}`,
+      async () => {
+        const response = await fetch(host + path, {
+          method: method,
+          body: JSON.stringify(body),
+          headers: body ? { "Content-type": "application/json" } : undefined,
+        });
 
-  await assert("/", "GET", 200, "Welcome to flash!");
-  await assert("/", "POST", 404, { message: "URL not exist." });
+        const json = await response.json();
 
-  await assert("/resources", "POST", 201, { name: "flash" });
-  await assert("/resources", "GET", 404);
+        const log = response.status === 500 ? json.stack : json;
+        console.log(log);
 
-  await assert("/resources/test", "GET", 200, { name: "test" });
-  await assert("/resources/test", "POST", 404);
+        assertEquals(response.status, status);
 
-  proc.stdout.close();
-  proc.close();
-});
+        if (value) {
+          if (typeof value === "string") assertEquals(json, value);
+          else assertObjectMatch(json, value);
+        }
+      },
+    );
+  };
 
-/*
-Deno.test("durable object", async () => {
   const proc = await startServer(
-    "./examples/durable_object.ts",
+    "./examples/worker.ts",
     "--do-namespace-binding",
-    "do:local:DO",
+    "do:local:MyDurableObject",
   );
 
-  assertObjectMatch(
-  await knock("/test"),
-  { id: "8feb29077a1df95bd8e261f2a94a8fe5ccb19ba61c4c0873d391e987982fbbd3" },
-  );
+  try {
+    await test({ path: "/", method: "GET" }, {
+      status: 200,
+      value: "Welcome to flash!",
+    });
+    await test({ path: "/", method: "POST" }, { status: 404 });
 
-  proc.stdout.close();
-  proc.close();
+    await test({ path: "/users", method: "GET" }, { status: 200 });
+
+    await test({ path: "/users", method: "POST" }, { status: 400 });
+
+    await test({ path: "/users", method: "POST", body: { name: "flash" } }, {
+      status: 201,
+    });
+
+    await test({ path: "/users/flash", method: "POST" }, { status: 404 });
+    await test({ path: "/users/flash", method: "GET" }, { status: 200 });
+    await test({ path: "/users/deno", method: "GET" }, { status: 404 });
+  } finally {
+    proc.stdout.close();
+    proc.close();
+  }
 });
-*/

@@ -72,12 +72,34 @@ export class Router<C extends Context> implements RouterMethods<C> {
     params: PathParams | undefined,
     key?: keyof Routes<C>,
   ): ResponseLike | HandlerLike<C> {
+    const errorValue = this.errors[500];
+
     return RouteHandler.guard(value)
-      ? async (args) =>
-        getResponseLike<C>(
-          key,
-          await value({ ...args, path: pathname, params: params ?? {} }),
-        )
+      ? async (args) => {
+        try {
+          return getResponseLike<C>(
+            key,
+            await value({ ...args, path: pathname, params: params ?? {} }),
+          );
+        } catch (error) {
+          if (errorValue) {
+            return RouteHandler.guard(errorValue)
+              ? getResponseLike<C>(
+                500,
+                // @ts-ignore: type error
+                await errorValue({
+                  ...args,
+                  path: pathname,
+                  params: params ?? {},
+                  error,
+                }),
+              )
+              : getResponseLike<C>(500, errorValue);
+          } else {
+            throw error;
+          }
+        }
+      }
       : getResponseLike<C>(key, value);
   }
 }

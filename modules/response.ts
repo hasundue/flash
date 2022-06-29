@@ -38,6 +38,6 @@ export const ResponseLike = {
     if (obj instanceof Response) return true;
     const keys = getKeys(obj);
     return keys.length === 1 &&
-      getValues(Status).some((status) => status === keys[0]);
+      getValues(Status).some((status) => status == keys[0]);
   },
 };

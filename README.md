@@ -1,47 +1,36 @@
 # flash
 
 Flash is a progressive web framework in TypeScript, particularly optimized for
-building REST APIs on serverless platforms with Deno.
+building cloud services with a REST APIs on serverless platforms with Deno.
 
 > **Warning**\
-> Do not use Flash for production use yet, unless you are a contributor to the
-> framework.
+> Flash is still an alpha version. Do not use it for production use yet, unless you are a contributor to the framework.
 
-## Philosophy
+## Concepts
 
-Flash is designed to be...
+- *Stay RESTful.*
+- *You implement, we type.*
 
-- :zap: _**Efficient**_ - frees you from what you don't have to do
-- :magic_wand: _**Flexible**_ - lets you achive what you want
-- :rotating_light: _**Strict**_ - prohibits you from doing what you shouldn't
+## Features / Roadmap
 
-Yes, they are conflicting. But why not try best to achieve all?
-
-## Features/Roadmap
-
-- [ ] :helicopter: **Multi Environment**
-  - Runtime
-    - [x] Deno
-    - [ ] Node.js
-  - Platform
-    - [x] [Cloudflare Workers](https://workers.cloudflare.com/)
-    - [ ] Deno Deploy
-  - Bundler/Emulator
-    - [ ] Wrangler2
-    - [x] Denoflare
-- [x] :rocket: **Progressive APIs**
-  - [x] Declarative interface for routers with tree structures
-  - [x] Error handlers integrated in routers
-  - [x] Polymorphism in handler definitions
+- [ ] :rocket: **Multi Platform**
+  - [x] Cloudflare Workers
+  - [ ] Deno Deploy
+- [x] :magic_wand: **Progressive APIs**
+  - [ ] Tree-structured and semantic routers
+  - [x] Polymorphism in resource implementation
   - [x] Syntax sugar for responses
-  - [x] Smart and customizable response formatter
-- [ ] :sun_behind_large_cloud: **Out-of-box middlewares for Cloudflare Workers**
+  - [ ] Strong type inference
+- [ ] :sun_behind_small_cloud: **Out-of-box middlewares for Cloudflare Workers**
   - [ ] Object storage associated with each resource URL
   - [ ] Blocking communication among workers
 - [ ] :scroll: **Code/Doc Generation**
   - [ ] Universal Typescript SDK for clients
   - [ ] OpenAPI specs
   - [ ] Seamless hosting of API documents
+- [ ] :gear: **Advanced functionalities**
+  - Multipart support
+  - GraphQL server
 - [ ] :sparkles: **Zero third-party dependencies**
 
 ## Usage
@@ -83,11 +72,9 @@ flare({
 You can define error handlers within a router:
 
 ```typescript
-flare({
   "/": "Welcome to flash!",
   404: "Not Found",
   500: "Unexpected Error",
-});
 ```
 
 ### Request Handlers

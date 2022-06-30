@@ -5,10 +5,10 @@ export type PickOne<T> = {
 }[keyof T];
 
 export type PickAny<T> = T extends Record<string, (infer S)> ? {
-    [P in keyof T]:
-      & Record<P, T[P]>
-      & Partial<Record<Exclude<keyof T, P>, S>>;
-  }[keyof T]
+  [P in keyof T]:
+    & Record<P, T[P]>
+    & Partial<Record<Exclude<keyof T, P>, S>>;
+}[keyof T]
   : never;
 
 export function getKeys<T extends string | number | symbol>(

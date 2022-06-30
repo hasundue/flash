@@ -156,12 +156,12 @@ type RouteHandler<C extends Context> = (
     params: PathParams;
     error?: Error;
   },
-) => RouteHandlerReturnType<C> | Promise<RouteHandlerReturnType<C>>;
+) => RouteHandlerReturnType | Promise<RouteHandlerReturnType>;
 
-type RouteHandlerReturnType<C extends Context> = Exclude<
-  RouteValue<C>,
-  MethodRoutes<C> | RouteHandler<C>
->;
+type RouteHandlerReturnType =
+  | ResponseLike
+  | Record<string, unknown>
+  | string;
 
 const RouteHandler = {
   guard<C extends Context>(

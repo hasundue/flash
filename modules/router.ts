@@ -1,28 +1,46 @@
-import { ErrorStatus } from "../deps.ts";
-import { getKeys, getObject, PickAny } from "./types.ts";
+import { ErrorStatus, Status } from "../deps.ts";
+import { getKeys, getObject, PickOne } from "./types.ts";
+import { Formatter, FormatterInit } from "./formatter.ts";
+import { getHandlerArgs } from "../mod.ts";
 
-import { Context, HandlerArgs, HandlerLike, RouterMethods } from "../mod.ts";
-import { ResponseLike } from "./response.ts";
+import {
+  Context,
+  Handler,
+  HandlerArgs,
+  HandlerParams,
+  RouterMethods,
+} from "../mod.ts";
+// import { Storage } from "./storage.ts";
 
-export type Routes<C extends Context> =
-  & {
-    [path: PathString]: RouteValue<C>;
-  }
-  & {
-    [code in ErrorStatus]?: Exclude<RouteValue<C>, MethodRoutes<C>>;
-  };
+class NotFound extends Error {}
+
+type ResourceRoutes<C extends Context> = {
+  [path: Path]: Resource<C, ResourceValue>;
+};
+
+type ErrorRoutes<C extends Context> = {
+  [code in ErrorStatus]?: ResourceImpl<C, ResourceValue>;
+};
+
+export type Routes<C extends Context> = ResourceRoutes<C> & ErrorRoutes<C> & {
+  formatter: FormatterInit;
+};
 
 export class Router<C extends Context> implements RouterMethods<C> {
-  private readonly routes: Omit<Routes<C>, ErrorStatus>;
-  private readonly errors: Omit<Routes<C>, PathString>;
+  private readonly routes: ResourceRoutes<C>;
+  private readonly errors: ErrorRoutes<C>;
+  private readonly formatter: FormatterInit;
 
   constructor(routes: Routes<C>) {
     this.routes = routes;
     this.errors = routes;
+    const { formatter } = routes;
+    this.formatter = formatter;
   }
 
-  route(request: Request) {
+  route(request: Request): Handler<C> {
     const { search, pathname } = new URL(request.url);
+    const path = pathname as Path;
 
     const startTime = Date.now();
 
@@ -33,19 +51,15 @@ export class Router<C extends Context> implements RouterMethods<C> {
       if (pattern.test({ pathname })) {
         const value = this.routes[route];
 
-        if (MethodRoutes.guard(value)) {
-          for (const method of getKeys(value)) {
-            if (method === request.method) {
-              const result = value[method] as ResponseLike | RouteHandler<C>;
-              return this.castHandler<C>(
-                result,
-                pathname as PathString,
-                params,
-              );
-            }
+        if (isMethodRoutes(value)) {
+          if (!isMethod(request.method)) continue;
+
+          const impl = value[request.method];
+          if (impl !== undefined) {
+            return this.evaluateImpl(route, impl, path, params ?? {});
           }
         } else {
-          return this.castHandler(value, pathname as PathString, params);
+          return this.evaluateImpl(route, value, path, params ?? {});
         }
       }
     }
@@ -55,118 +69,177 @@ export class Router<C extends Context> implements RouterMethods<C> {
     );
 
     if (this.errors[404]) {
-      return this.castHandler(
-        this.errors[404],
-        pathname as PathString,
-        {},
-        404,
-      );
+      return this.evaluateImpl(404, this.errors[404], path, {});
     } else {
-      throw Error("Route Not Found");
+      throw new NotFound();
     }
   }
 
-  private castHandler<C extends Context>(
-    value: Exclude<RouteValue<C>, MethodRoutes<C>>,
-    pathname: PathString,
-    params: PathParams | undefined,
-    key?: keyof Routes<C>,
-  ): ResponseLike | HandlerLike<C> {
-    const errorValue = this.errors[500];
+  private evaluateImpl<S extends keyof Routes<C>, R extends RouteReturnType>(
+    route: S,
+    impl: ResourceImpl<C, R>,
+    path: Path,
+    params: PathParams,
+  ): Handler<C> {
+    const errorImpl = this.errors[500];
 
-    return RouteHandler.guard(value)
-      ? async (args) => {
+    return isRouteHandler(impl)
+      ? async (...args: HandlerParams<C>) => {
+        const record = getHandlerArgs(args);
         try {
-          return getResponseLike<C>(
-            key,
-            await value({ ...args, path: pathname, params: params ?? {} }),
+          const like = getResponseLike<C, S, R>(
+            route,
+            await impl({ ...record, path, params }),
           );
+          return this.formatResponseLike(like);
         } catch (error) {
-          if (errorValue) {
-            return RouteHandler.guard(errorValue)
-              ? getResponseLike<C>(
+          if (errorImpl !== undefined) {
+            const like = isRouteHandler(errorImpl)
+              ? getResponseLike<C, 500, RouteReturnType>(
                 500,
-                // @ts-ignore: type error
-                await errorValue({
-                  ...args,
-                  path: pathname,
-                  params: params ?? {},
-                  error,
-                }),
+                await errorImpl({ ...record, path, params, error }),
               )
-              : getResponseLike<C>(500, errorValue);
+              : getResponseLike<C, 500, RouteReturnType>(500, errorImpl);
+            return this.formatResponseLike(like);
           } else {
             throw error;
           }
         }
       }
-      : getResponseLike<C>(key, value);
+      : async (..._args: Parameters<Handler<C>>) => {
+        const like = getResponseLike<C, S, R>(route, impl);
+        const response = this.formatResponseLike(like);
+        return await Promise.resolve(response);
+      };
+  }
+
+  private formatResponseLike<R extends RouteReturnType>(
+    like: ResponseLike<R>,
+  ): Response {
+    const formatter = new Formatter(this.formatter);
+    return formatter.format(like);
   }
 }
 
-function getResponseLike<C extends Context>(
-  key: keyof Routes<C> | undefined,
-  value: string | Record<string, unknown> | ResponseLike,
-): ResponseLike {
-  if (typeof value !== "string" && ResponseLike.guard(value)) return value;
+function getResponseLike<
+  C extends Context,
+  S extends keyof Routes<C>,
+  R extends RouteReturnType,
+>(
+  route: S,
+  value: R | ResponseLike<R>,
+): ResponseLike<R> {
+  if (isResponseLike(value)) return value;
+
+  const status = typeof route === "string" ? 200 : route;
 
   return getObject([
-    [key ?? 200, value],
+    [status, value],
   ]);
 }
 
-type PathString = `/${string}`;
+type Path = `/${string}`;
 type PathParams = Record<string, string>;
 
 const methods = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 type Method = typeof methods[number];
 
-export const Method = {
-  guard(str: string | number | symbol): str is Method {
-    return methods.some((method) => method === str);
-  },
-};
+function isMethod(str: string): str is Method {
+  return methods.some((method) => method == str);
+}
 
-type RouteValue<C extends Context> =
-  | MethodRoutes<C>
-  | RouteHandler<C>
-  | ResponseLike
-  | Record<string, unknown>
-  | string;
+type Resource<C extends Context, V extends ResourceValue> =
+  | Collection<C, V>
+  | Item<C, V>;
 
-type MethodRoutes<C extends Context> = PickAny<
-  {
-    [M in Method]: RouteHandler<C> | ResponseLike | Response;
+type Collection<C extends Context, V extends ResourceValue> =
+  | MethodRoutes<C, V[]>
+  // & Routes<C>
+  | ResourceImpl<C, V[]>;
+
+type Item<C extends Context, V extends ResourceValue> =
+  | MethodRoutes<C, V>
+  // & Routes<C>
+  | ResourceImpl<C, V>;
+
+type MethodRoutes<C extends Context, R extends RouteReturnType> =
+  & {
+    GET: ResourceImpl<C, R>;
   }
->;
+  & {
+    [M in Exclude<Method, "GET">]?: ResourceImpl<C, R>;
+  };
 
-const MethodRoutes = {
-  guard<C extends Context>(
-    value: RouteValue<C>,
-  ): value is MethodRoutes<C> {
-    return typeof value !== "function" && typeof value !== "string" &&
-      !(value instanceof Response) &&
-      getKeys(value).every(Method.guard);
-  },
-};
+type ResourceImpl<C extends Context, R extends RouteReturnType> =
+  | RouteHandler<C, R>
+  | ResponseLike<R>
+  | R;
 
-type RouteHandler<C extends Context> = (
+type RouteHandler<C extends Context, R extends RouteReturnType> = (
   args: HandlerArgs<C> & {
-    path: PathString;
+    path: Path;
     params: PathParams;
+    // storage: Storage<C>;
     error?: Error;
   },
-) => RouteHandlerReturnType | Promise<RouteHandlerReturnType>;
+) => R | Promise<R> | ResponseLike<R> | Promise<ResponseLike<R>>;
 
-type RouteHandlerReturnType =
-  | ResponseLike
+export type RouteReturnType = ResourceValue | ResourceValue[];
+
+function isMethodRoutes<C extends Context, V extends ResourceValue>(
+  resource: Resource<C, V>,
+): resource is MethodRoutes<C, V> | MethodRoutes<C, V[]> {
+  return typeof resource === "object" && resource !== null &&
+    Object.keys(resource).every(isMethod);
+}
+
+function isRouteHandler<C extends Context, R extends RouteReturnType>(
+  impl: ResourceImpl<C, R>,
+): impl is RouteHandler<C, R> {
+  return typeof impl === "function";
+}
+
+type Primitive = string | number | boolean | null;
+
+export type ResourceValue =
   | Record<string, unknown>
-  | string;
+  | Primitive
+  | Primitive[];
 
-const RouteHandler = {
-  guard<C extends Context>(
-    value: RouteValue<C>,
-  ): value is RouteHandler<C> {
-    return typeof value === "function";
-  },
-};
+export type ResponseLike<R extends RouteReturnType> =
+  & PickOne<
+    {
+      [code in Status]: R;
+    }
+  >
+  & ResponseInit;
+
+function isResponseLike<R extends RouteReturnType>(
+  value: R | ResponseLike<R>,
+): value is ResponseLike<R> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+  const keys = Object.keys(value);
+  return keys.length === 1 &&
+    Object.values(Status).some((status) => status == keys[0]);
+}
+
+/*
+function isResourceImpl<C extends Context, T extends ResourceValue>(
+  resource: Resource<C, T>,
+): resource is ResourceImpl<C, T> | ResourceImpl<C, T> {
+  return !isMethodRoutes(resource);
+}
+
+function isResourceValue<T extends ResourceValue>(
+  impl: ResourceImpl<Context, T>,
+): impl is RouteReturnType {
+  return typeof impl !== "function";
+}
+
+function isPrimitive(value: RouteReturnType) {
+  return value === null || typeof value === "string" ||
+    typeof value === "number" || typeof value === "boolean";
+}
+*/

@@ -2,8 +2,8 @@ export type {
   DurableObjectNamespace,
   DurableObjectState,
   DurableObjectStub,
-  IncomingRequestCf,
-  ModuleWorkerContext,
+  IncomingRequestCf as WorkerRequest,
+  ModuleWorkerContext as WorkerContext,
 } from "https://pax.deno.dev/skymethod/denoflare@v0.5.2/common/cloudflare_workers_types.d.ts";
 
 export type {

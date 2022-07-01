@@ -15,3 +15,6 @@ export function fetch(
   const stub = namespace.get(id);
   return stub.fetch(request);
 }
+
+export class WorkerStorage {
+}

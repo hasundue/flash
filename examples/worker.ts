@@ -1,6 +1,5 @@
 import { fetcher, flare } from "../mod.ts";
 import * as DurableObject from "../modules/durable_object.ts";
-import { parse } from "https://pax.deno.dev/thenoakes/deno-body-parser/mod.ts";
 
 declare module "../mod.ts" {
   interface WorkerEnv {
@@ -11,22 +10,27 @@ declare module "../mod.ts" {
 export default flare({
   "/": {
     // [200 OK] { message: "Welcome to flash!" }
-    GET: "Welcome to flash!",
+    GET: { 200: "Welcome to flash!" },
   },
 
   "/users": {
     GET: async ({ request, env }) => {
-      return await DurableObject.fetch(env.do, "/users", request);
+      const response = await DurableObject.fetch(env.do, "/users", request);
+      return await response.json();
     },
 
     POST: async ({ request, env }) => {
-      return await DurableObject.fetch(env.do, "/users", request);
+      const response = await DurableObject.fetch(env.do, "/users", request);
+      const body = await response.json();
+      return response.status == 201 ? { 201: body } : { 400: body };
     },
   },
 
   "/users/:name": {
     GET: async ({ request, env }) => {
-      return await DurableObject.fetch(env.do, "/users", request);
+      const response = await DurableObject.fetch(env.do, "/users", request);
+      const body = await response.json();
+      return response.status == 200 ? body : { 404: body };
     },
   },
 
@@ -36,7 +40,7 @@ export default flare({
   // [500 Internal Server Error] { message: "Unexpected error.", stack: "..." }
   500: ({ error }) => ({ message: "Unexpected error.", stack: error?.stack }),
 
-  format: { error: { message: true } },
+  formatter: { error: { message: true } },
 });
 
 export class MyDurableObject implements DurableObject.Stub {
@@ -51,12 +55,17 @@ export class MyDurableObject implements DurableObject.Stub {
       GET: async () => await this.state.storage.list(),
 
       POST: async ({ request }) => {
-        const body = await parse(request);
+        let body;
 
-        if (!body) return { 400: "Request body missing." };
-        if (!body.data?.name) return { 400: "Field 'name' missing." };
+        try {
+          body = await request.json();
+        } catch {
+          return { 400: "Request body missing." };
+        }
 
-        const { name }: { name: string } = body.data;
+        if (!body.name) return { 400: "Field 'name' missing." };
+
+        const { name }: { name: string } = body;
         const value = { name, awesome: true };
 
         await this.state.storage.put(name, value);
@@ -76,6 +85,6 @@ export class MyDurableObject implements DurableObject.Stub {
 
     500: ({ error }) => ({ message: "Unexpected error.", stack: error?.stack }),
 
-    format: { error: { message: true } },
+    formatter: { error: { message: true } },
   });
 }

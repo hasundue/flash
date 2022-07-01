@@ -1,34 +1,34 @@
-import type { IncomingRequestCf, ModuleWorkerContext } from "./deps.ts";
+import type { WorkerContext, WorkerRequest } from "./deps.ts";
 
 import { Router, Routes } from "./modules/router.ts";
-import { ResponseLike } from "./modules/response.ts";
-import { FormatInit, Formatter } from "./modules/formatter.ts";
 
 // deno-lint-ignore no-empty-interface
 export interface WorkerEnv {
 }
-
-type WorkerRequest = IncomingRequestCf;
-type WorkerContext = ModuleWorkerContext;
 
 export type Context = Worker | DurableObject;
 
 export type Worker = "Worker";
 export type DurableObject = "DurableObject";
 
-export type Handler<C extends Context> = C extends Worker ? WorkerHandler
-  : DurableObjectHandler;
+export type Handler<C extends Context> = (
+  ...args: HandlerParams<C>
+) => Promise<Response>;
 
-type WorkerHandler = (
+export type HandlerParams<C extends Context> = C extends Worker
+  ? WorkerHandlerParams
+  : DurableObjectHandlerParams;
+
+type WorkerHandlerParams = [
   request: WorkerRequest,
   env: WorkerEnv,
   context: WorkerContext,
-) => Response | Promise<Response>;
+];
 
-type DurableObjectHandler = (
+type DurableObjectHandlerParams = [
   request: Request,
-  init?: RequestInit,
-) => Promise<Response>;
+  init: RequestInit,
+];
 
 export type HandlerArgs<C extends Context> = C extends Worker
   ? WorkerHandlerArgs
@@ -42,53 +42,53 @@ type WorkerHandlerArgs = {
 
 type DurableObjectHandlerArgs = {
   request: Request;
-  init?: RequestInit;
+  init: RequestInit;
 };
 
-export type HandlerLike<C extends Context> = (
-  args: HandlerArgs<C>,
-) => ResponseLike | Promise<ResponseLike>;
+function isWorkerHandlerParams(
+  params: WorkerHandlerParams | DurableObjectHandlerParams,
+): params is WorkerHandlerParams {
+  return params.length === 3;
+}
 
-export interface FormatterMethods {
-  format: (precursor: ResponseLike) => Response;
+export function getHandlerArgs<C extends Context>(
+  params: HandlerParams<C>,
+): HandlerArgs<C> {
+  if (isWorkerHandlerParams(params)) {
+    // @ts-ignore: type error TODO:
+    return {
+      request: params[0],
+      env: params[1],
+      context: params[2],
+    };
+  } else {
+    // @ts-ignore: type error TODO:
+    return {
+      request: params[0],
+      init: params[1],
+    };
+  }
 }
 
 export interface RouterMethods<C extends Context> {
-  route: (request: Request) => ResponseLike | HandlerLike<C>;
+  route: (request: Request) => Handler<C>;
 }
 
-export type Flash<C extends Context> = Routes<C> & { format?: FormatInit };
-
-export function flare(flash: Flash<Worker>): {
-  fetch: WorkerHandler;
-} {
-  const { format, ...routes } = flash;
-
+export function RestAPI<C extends Context>(routes: Routes<C>): Handler<C> {
   const router = new Router(routes);
-  const formatter = new Formatter(format);
 
+  return async (...args: Parameters<Handler<C>>) => {
+    const handler = router.route(args[0]);
+    return await handler(...args);
+  };
+}
+
+export function flare(routes: Routes<Worker>) {
   return {
-    fetch: async (request, env, context) => {
-      const value = router.route(request);
-      const precursor = typeof value === "function"
-        ? await value({ request, env, context })
-        : value;
-      return formatter.format(precursor);
-    },
+    fetch: RestAPI(routes),
   };
 }
 
-export function fetcher(flash: Flash<DurableObject>): DurableObjectHandler {
-  const { format, ...routes } = flash;
-
-  const router = new Router(routes);
-  const formatter = new Formatter(format);
-
-  return async (request, init?) => {
-    const value = router.route(request);
-    const precursor = typeof value === "function"
-      ? await value({ request, init })
-      : value;
-    return formatter.format(precursor);
-  };
+export function fetcher(routes: Routes<DurableObject>) {
+  return RestAPI(routes);
 }

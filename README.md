@@ -1,15 +1,17 @@
 # flash
 
-Flash is a progressive web framework in TypeScript, particularly optimized for
-building cloud services with a REST APIs on serverless platforms with Deno.
+Flash is a type-oriented web framework in TypeScript, particularly optimized for
+building cloud microservices with a REST API on a serverless platforms with
+Deno.
 
 > **Warning**\
-> Flash is still an alpha version. Do not use it for production use yet, unless you are a contributor to the framework.
+> Flash is still an alpha version. Do not use it for production use yet, unless
+> you are a contributor to the framework.
 
 ## Concepts
 
-- *Stay RESTful.*
-- *You implement, we type.*
+- _Stay RESTful._
+- _You implement, we type._
 
 ## Features / Roadmap
 
@@ -29,8 +31,8 @@ building cloud services with a REST APIs on serverless platforms with Deno.
   - [ ] OpenAPI specs
   - [ ] Seamless hosting of API documents
 - [ ] :gear: **Advanced functionalities**
-  - Multipart support
-  - GraphQL server
+  - [ ] Multipart support
+  - [ ] GraphQL server
 - [ ] :sparkles: **Zero third-party dependencies**
 
 ## Usage
@@ -72,9 +74,11 @@ flare({
 You can define error handlers within a router:
 
 ```typescript
+flare({
   "/": "Welcome to flash!",
   404: "Not Found",
   500: "Unexpected Error",
+});
 ```
 
 ### Request Handlers

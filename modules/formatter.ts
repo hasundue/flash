@@ -1,7 +1,6 @@
 import { ErrorStatus, Status, STATUS_TEXT, SuccessStatus } from "../deps.ts";
-import { FormatterMethods } from "../mod.ts";
 import { getKey, getKeys, getObject, getValues, PickOne } from "./types.ts";
-import { ResponseLike } from "./response.ts";
+import { ResponseLike, RouteReturnType } from "./router.ts";
 
 type Format = { message: true };
 
@@ -15,7 +14,7 @@ const Format = {
   },
 };
 
-export type FormatInit =
+export type FormatterInit =
   | Format
   | {
     success?: Format;
@@ -25,10 +24,10 @@ export type FormatInit =
       [P in Status]?: Format;
     };
 
-export class Formatter implements FormatterMethods {
+export class Formatter {
   private readonly spec: { [P in Status]?: Format };
 
-  constructor(init?: FormatInit) {
+  constructor(init?: FormatterInit) {
     this.spec = {};
 
     if (!init) return;
@@ -66,11 +65,9 @@ export class Formatter implements FormatterMethods {
     }
   }
 
-  format(precursor: ResponseLike): Response {
-    if (precursor instanceof Response) {
-      return precursor;
-    }
-    const statusAndBody: PickOne<{ [P in Status]: unknown }> = precursor;
+  format(precursor: ResponseLike<RouteReturnType>): Response {
+    const statusAndBody: PickOne<{ [P in Status]: RouteReturnType }> =
+      precursor;
     const status = getKey(statusAndBody);
     const body = statusAndBody[status];
     const format = this.spec[status];

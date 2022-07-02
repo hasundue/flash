@@ -1,6 +1,8 @@
 import type { WorkerContext, WorkerRequest } from "./deps.ts";
 
-import { Router, Routes } from "./modules/router.ts";
+import { Path, Router, Routes } from "./modules/router.ts";
+
+export type { Routes } from "./modules/router.ts";
 
 // deno-lint-ignore no-empty-interface
 export interface WorkerEnv {
@@ -74,7 +76,9 @@ export interface RouterMethods<C extends Context> {
   route: (request: Request) => Handler<C>;
 }
 
-export function RestAPI<C extends Context>(routes: Routes<C>): Handler<C> {
+export function RestAPI<C extends Context, Ps extends Path>(
+  routes: Routes<C, Ps>,
+): Handler<C> {
   const router = new Router(routes);
 
   return async (...args: Parameters<Handler<C>>) => {
@@ -83,12 +87,12 @@ export function RestAPI<C extends Context>(routes: Routes<C>): Handler<C> {
   };
 }
 
-export function flare(routes: Routes<Worker>) {
+export function flare<Ps extends Path>(routes: Routes<Worker, Ps>) {
   return {
     fetch: RestAPI(routes),
   };
 }
 
-export function fetcher(routes: Routes<DurableObject>) {
+export function fetcher<Ps extends Path>(routes: Routes<DurableObject, Ps>) {
   return RestAPI(routes);
 }

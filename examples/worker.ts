@@ -27,7 +27,7 @@ export default flare({
   },
 
   "/users/:name": {
-    GET: async ({ request, env }) => {
+    GET: async ({ request, env, params }) => {
       const response = await DurableObject.fetch(env.do, "/users", request);
       const body = await response.json();
       return response.status == 200 ? body : { 404: body };

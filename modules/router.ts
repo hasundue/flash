@@ -1,5 +1,5 @@
 import { ErrorStatus, Status } from "../deps.ts";
-import { getKeys, getObject, PickOne } from "./types.ts";
+import { getKeys, getObject } from "./types.ts";
 import { Formatter, FormatterInit } from "./formatter.ts";
 import { getHandlerArgs } from "../mod.ts";
 
@@ -17,26 +17,31 @@ class NotFound extends Error {}
 type ResourceRoutes<
   C extends Context,
   Ps extends Path,
+  R,
 > = {
-  [P in Ps]: Resource<C, P, ResourceValue>;
+  [P in Ps]: R extends
+    Resource<C, Ps, infer S extends Status, infer V extends EntityType>
+    ? Resource<C, P, S, V>
+    : never;
 };
 
 type ErrorRoutes<C extends Context> = {
   [E in ErrorStatus]?: ErrorImpl<C, E>;
 };
 
-export type Routes<C extends Context, Ps extends Path> =
-  & ResourceRoutes<C, Ps>
+export type Routes<C extends Context, Ps extends Path> = Readonly<
+  & ResourceRoutes<C, Ps, Resource<C, Path, Status, EntityType>>
   & ErrorRoutes<C>
   & {
     formatter?: FormatterInit;
-  };
+  }
+>;
 
 export class Router<C extends Context, Ps extends Path>
   implements RouterMethods<C> {
-  private readonly routes: ResourceRoutes<C, Ps>;
-  private readonly errors: ErrorRoutes<C>;
-  private readonly formatter?: FormatterInit;
+  private routes: ResourceRoutes<C, Ps, any>;
+  private errors: ErrorRoutes<C>;
+  private formatter?: FormatterInit;
 
   constructor(routes: Routes<C, Ps>) {
     this.routes = routes;
@@ -87,8 +92,10 @@ export class Router<C extends Context, Ps extends Path>
 
   private evaluateResourceImpl<
     P extends Ps,
+    S extends Status,
+    R extends ResourceType,
   >(
-    impl: ResourceImpl<C, P, RouteReturnType>,
+    impl: ResourceImpl<C, P, S, R>,
     path: P,
     params: PathParams<P> | undefined,
   ): Handler<C> {
@@ -98,11 +105,10 @@ export class Router<C extends Context, Ps extends Path>
       ? async (...args: HandlerParams<C>) => {
         const record = getHandlerArgs(args);
         try {
-          const like = getResponseLike(
-            path,
-            await impl({ ...record, path, params }),
-          );
-          return this.formatResponseLike(like);
+          const value = await impl({ ...record, path, params });
+          return isResponseLike(value)
+            ? this.formatResponseLike(value)
+            : this.formatResponseLike(getResponseLike(200, value));
         } catch (error) {
           if (errorImpl !== undefined) {
             const handler = this.evaluateErrorImpl(
@@ -119,8 +125,9 @@ export class Router<C extends Context, Ps extends Path>
         }
       }
       : async (..._args: Parameters<Handler<C>>) => {
-        const like = getResponseLike(path, impl);
-        const response = this.formatResponseLike(like);
+        const response = isResponseLike(impl)
+          ? this.formatResponseLike(impl)
+          : this.formatResponseLike(getResponseLike(200, impl));
         return await Promise.resolve(response);
       };
   }
@@ -135,27 +142,22 @@ export class Router<C extends Context, Ps extends Path>
     return this.isErrorHandler(impl)
       ? async (...args: HandlerParams<C>) => {
         const record = getHandlerArgs(args);
-        const like = getResponseLike(
-          500,
-          await impl({
-            ...record,
-            status,
-            path,
-            params: params,
-            error,
-          }),
-        );
-        return this.formatResponseLike(like);
+        const value = await impl({ ...record, status, path, params, error });
+        return isResponseLike(value)
+          ? this.formatResponseLike(value)
+          : this.formatResponseLike(getResponseLike(status, value));
       }
       : async (..._args: Parameters<Handler<C>>) => {
-        const like = getResponseLike(status, impl);
+        const like = isResponseLike(impl)
+          ? impl
+          : getResponseLike(status, impl);
         const response = this.formatResponseLike(like);
         return await Promise.resolve(response);
       };
   }
 
-  private formatResponseLike<R extends RouteReturnType>(
-    like: ResponseLike<R>,
+  private formatResponseLike<S extends Status, R extends ReturnType>(
+    like: ResponseLike<S, R>,
   ): Response {
     const formatter = new Formatter(this.formatter);
     return formatter.format(like);
@@ -163,44 +165,40 @@ export class Router<C extends Context, Ps extends Path>
 
   private isMethodRoutes<
     P extends Ps,
-    V extends ResourceValue,
+    S extends Status,
+    V extends EntityType,
   >(
-    resource: Resource<C, P, V>,
-  ): resource is MethodRoutes<C, P, V> | MethodRoutes<C, P, V[]> {
+    resource: Resource<C, P, S, V>,
+  ): resource is MethodRoutes<C, P, S, V> | MethodRoutes<C, P, S, V[]> {
     return typeof resource === "object" && resource !== null &&
       Object.keys(resource).every(isMethod);
   }
 
   private isRouteHandler<
     P extends Path,
-    R extends RouteReturnType,
+    S extends Status,
+    R extends ResourceType,
   >(
-    impl: ResourceImpl<C, P, R>,
-  ): impl is RouteHandler<C, P, R> {
+    impl: ResourceImpl<C, P, S, R>,
+  ): impl is RouteHandler<C, P, S, R> {
     return typeof impl === "function";
   }
 
-  private isErrorHandler<E extends ErrorStatus>(
+  private isErrorHandler<E extends ErrorStatus, R extends ErrorType>(
     impl: ErrorImpl<C, E>,
-  ): impl is ErrorHandler<C, E, ErrorReturnType> {
+  ): impl is ErrorHandler<C, E, R> {
     return typeof impl === "function";
   }
 }
 
 function getResponseLike<
-  P extends Path | Status,
-  R extends RouteReturnType,
+  S extends Status,
+  R extends ReturnType,
 >(
-  route: P,
-  value: R | ResponseLike<R>,
-): ResponseLike<R> {
-  if (isResponseLike(value)) return value;
-
-  const status = typeof route === "string" ? 200 : route;
-
-  return getObject([
-    [status, value],
-  ]);
+  status: S,
+  value: R,
+): ResponseLike<S, R> {
+  return getObject([[status, value]]);
 }
 
 export type Path = `/${string}`;
@@ -232,54 +230,72 @@ function isMethod(str: string): str is Method {
   return methods.some((method) => method == str);
 }
 
-type Resource<C extends Context, P extends Path, V extends ResourceValue> =
-  | Collection<C, P, V>
-  | Item<C, P, V>;
+type Resource<
+  C extends Context,
+  P extends Path,
+  S extends Status,
+  V extends EntityType,
+> =
+  | Collection<C, P, S, V>
+  | Entity<C, P, S, V>;
 
-type Collection<C extends Context, P extends Path, V extends ResourceValue> =
-  | MethodRoutes<C, P, V[]>
+type Collection<
+  C extends Context,
+  P extends Path,
+  S extends Status,
+  V extends EntityType,
+> =
+  | MethodRoutes<C, P, S, V[]>
   // & Routes<C>
-  | ResourceImpl<C, P, V[]>;
+  | ResourceImpl<C, P, S, V[]>;
 
-type Item<C extends Context, P extends Path, V extends ResourceValue> =
-  | MethodRoutes<C, P, V>
+type Entity<
+  C extends Context,
+  P extends Path,
+  S extends Status,
+  V extends EntityType,
+> =
+  | MethodRoutes<C, P, S, V>
   // & Routes<C>
-  | ResourceImpl<C, P, V>;
+  | ResourceImpl<C, P, S, V>;
 
 type MethodRoutes<
   C extends Context,
   P extends Path,
-  R extends RouteReturnType,
+  S extends Status,
+  R extends ResourceType,
 > =
   & {
-    GET: ResourceImpl<C, P, R>;
+    GET: ResourceImpl<C, P, S, R>;
   }
   & {
-    [M in Exclude<Method, "GET">]?: ResourceImpl<C, P, RouteReturnType>;
+    [M in Exclude<Method, "GET">]?: ResourceImpl<C, P, Status, ResourceType>;
   };
 
 type ResourceImpl<
   C extends Context,
   P extends Path,
-  R extends RouteReturnType,
+  S extends Status,
+  R extends ResourceType,
 > =
-  | RouteHandler<C, P, R>
-  | ResponseLike<R>
+  | RouteHandler<C, P, S, R>
+  | ResponseLike<S, R>
   | R;
 
 type ErrorImpl<C extends Context, E extends ErrorStatus> =
   | ErrorHandler<
     C,
     E,
-    ErrorReturnType
+    ErrorType
   >
-  | ResponseLike<RouteReturnType>
-  | ErrorReturnType;
+  | ResponseLike<E, ErrorType>
+  | ErrorType;
 
 type RouteHandler<
   C extends Context,
   P extends Path,
-  R extends RouteReturnType,
+  S extends Status,
+  R extends ResourceType,
 > = (
   args: HandlerArgs<C> & {
     path: P;
@@ -287,14 +303,18 @@ type RouteHandler<
     // storage: Storage<C>;
     error?: Error;
   },
-) => R | Promise<R> | ResponseLike<R> | Promise<ResponseLike<R>>;
+) =>
+  | R
+  | Promise<R>
+  | ResponseLike<S, R>
+  | Promise<ResponseLike<S, R>>;
 
-export type RouteReturnType = ResourceValue | ResourceValue[];
+export type ResourceType = EntityType | EntityType[];
 
 type ErrorHandler<
   C extends Context,
   E extends ErrorStatus,
-  R extends ErrorReturnType,
+  R extends ErrorType,
 > = (
   args: HandlerArgs<C> & {
     status: E;
@@ -303,28 +323,28 @@ type ErrorHandler<
     error?: Error;
     // storage: Storage<C>;
   },
-) => R | Promise<R> | ResponseLike<R> | Promise<ResponseLike<R>>;
+) => R | Promise<R> | ResponseLike<E, R> | Promise<ResponseLike<E, R>>;
 
-type ErrorReturnType = string | Record<string, unknown>;
+type ErrorType = string | Record<string, unknown>;
+
+export type ReturnType = ErrorType | ResourceType;
 
 type Primitive = string | number | boolean | null;
 
-export type ResourceValue =
+export type EntityType =
   | Record<string, unknown>
   | Primitive
   | Primitive[];
 
-export type ResponseLike<R extends RouteReturnType> =
-  & PickOne<
-    {
-      [code in Status]: R;
-    }
-  >
+export type ResponseLike<S extends Status, R extends ReturnType> =
+  & {
+    [code in S]: R;
+  }
   & ResponseInit;
 
-function isResponseLike<R extends RouteReturnType>(
-  value: R | ResponseLike<R>,
-): value is ResponseLike<R> {
+function isResponseLike<S extends Status, R extends ReturnType>(
+  value: R | ResponseLike<S, R>,
+): value is ResponseLike<S, R> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     return false;
   }

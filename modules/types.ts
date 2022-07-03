@@ -18,7 +18,7 @@ export function getKeys<T extends string | number | symbol>(
 }
 
 export function getKey<T extends string | number | symbol>(
-  object: PickOne<Record<T, unknown>>,
+  object: Record<T, unknown>,
 ) {
   return Object.keys(object)[0] as T;
 }

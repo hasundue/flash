@@ -1,3 +1,3 @@
 import { flare } from "../mod.ts";
 
-export default flare({ "/": "Hello, world!" });
+export default flare({ "/": "Hello, World!" });

@@ -14,23 +14,20 @@ import {
 
 class NotFound extends Error {}
 
-type ResourceRoutes<
-  C extends Context,
-  Ps extends Path,
-  R,
-> = {
-  [P in Ps]: R extends
-    Resource<C, Ps, infer S extends Status, infer V extends EntityType>
-    ? Resource<C, P, S, V>
-    : never;
-};
+type ResourceRoutes<C extends Context, Ps extends Path> = Readonly<
+  {
+    [P in Ps]: Resource<C, P, Status, EntityType>;
+  }
+>;
 
-type ErrorRoutes<C extends Context> = {
-  [E in ErrorStatus]?: ErrorImpl<C, E>;
-};
+type ErrorRoutes<C extends Context> = Readonly<
+  {
+    [E in ErrorStatus]?: ErrorImpl<C, E>;
+  }
+>;
 
 export type Routes<C extends Context, Ps extends Path> = Readonly<
-  & ResourceRoutes<C, Ps, Resource<C, Path, Status, EntityType>>
+  & ResourceRoutes<C, Ps>
   & ErrorRoutes<C>
   & {
     formatter?: FormatterInit;
@@ -39,7 +36,7 @@ export type Routes<C extends Context, Ps extends Path> = Readonly<
 
 export class Router<C extends Context, Ps extends Path>
   implements RouterMethods<C> {
-  private routes: ResourceRoutes<C, Ps, any>;
+  private routes: ResourceRoutes<C, Ps>;
   private errors: ErrorRoutes<C>;
   private formatter?: FormatterInit;
 
@@ -92,10 +89,8 @@ export class Router<C extends Context, Ps extends Path>
 
   private evaluateResourceImpl<
     P extends Ps,
-    S extends Status,
-    R extends ResourceType,
   >(
-    impl: ResourceImpl<C, P, S, R>,
+    impl: ResourceImpl<C, P, Status, ResourceType>,
     path: P,
     params: PathParams<P> | undefined,
   ): Handler<C> {
@@ -264,13 +259,14 @@ type MethodRoutes<
   P extends Path,
   S extends Status,
   R extends ResourceType,
-> =
+> = Readonly<
   & {
     GET: ResourceImpl<C, P, S, R>;
   }
   & {
     [M in Exclude<Method, "GET">]?: ResourceImpl<C, P, Status, ResourceType>;
-  };
+  }
+>;
 
 type ResourceImpl<
   C extends Context,
@@ -279,7 +275,7 @@ type ResourceImpl<
   R extends ResourceType,
 > =
   | RouteHandler<C, P, S, R>
-  | ResponseLike<S, R>
+  // | ResponseLike<S, R>
   | R;
 
 type ErrorImpl<C extends Context, E extends ErrorStatus> =
@@ -318,21 +314,21 @@ type ErrorHandler<
 > = (
   args: HandlerArgs<C> & {
     status: E;
-    path?: Path;
-    params?: PathParams<Path>;
-    error?: Error;
+    path: Path | undefined;
+    params: PathParams<Path> | undefined;
+    error: Error | undefined;
     // storage: Storage<C>;
   },
 ) => R | Promise<R> | ResponseLike<E, R> | Promise<ResponseLike<E, R>>;
 
-type ErrorType = string | Record<string, unknown>;
+type ErrorType = string | Readonly<Record<string, unknown>>;
 
 export type ReturnType = ErrorType | ResourceType;
 
 type Primitive = string | number | boolean | null;
 
 export type EntityType =
-  | Record<string, unknown>
+  | Readonly<Record<string, unknown>>
   | Primitive
   | Primitive[];
 

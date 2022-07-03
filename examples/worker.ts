@@ -25,7 +25,6 @@ export default flare({
       return response.status == 201 ? { 201: body } : { 400: body };
     },
   },
-
   "/users/:name": {
     GET: async ({ request, env, params }) => {
       const response = await DurableObject.fetch(env.do, "/users", request);
@@ -33,14 +32,12 @@ export default flare({
       return response.status == 200 ? body : { 404: body };
     },
   },
-
   // [404 Not Found] { message: "URL not exist" }
-  404: { message: "Requested URL or method is not available." },
-
+  // 404: { message: "Requested URL or method is not available." },
   // [500 Internal Server Error] { message: "Unexpected error.", stack: "..." }
-  500: ({ error }) => ({ message: "Unexpected error.", stack: error?.stack }),
+  // 500: () => ({ message: "Unexpected error." }),
 
-  formatter: { error: { message: true } },
+  // formatter: { error: { message: true } },
 });
 
 export class MyDurableObject implements DurableObject.Stub {

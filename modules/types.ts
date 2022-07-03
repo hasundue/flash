@@ -38,5 +38,5 @@ export function getObject<
 >(
   entries: [K, V][],
 ) {
-  return Object.fromEntries(entries) as Record<K, V>;
+  return Object.fromEntries(entries) as Readonly<Record<K, V>>;
 }

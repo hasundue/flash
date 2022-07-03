@@ -12,13 +12,11 @@ export default flare({
     // [200 OK] { message: "Welcome to flash!" }
     GET: { 200: "Welcome to flash!" },
   },
-
   "/users": {
     GET: async ({ request, env }) => {
       const response = await DurableObject.fetch(env.do, "/users", request);
       return await response.json();
     },
-
     POST: async ({ request, env }) => {
       const response = await DurableObject.fetch(env.do, "/users", request);
       const body = await response.json();
@@ -34,7 +32,6 @@ export default flare({
   },
 }, {
   404: { message: "Requested URL or method is not available." },
-
   500: ({ error }) => ({ message: "Unexpected error.", stack: error?.stack }),
 });
 
@@ -68,7 +65,6 @@ export class MyDurableObject implements DurableObject.Stub {
         return { 201: value };
       },
     },
-
     "/users/:name": {
       GET: async ({ params }) => {
         const value = await this.state.storage.get(params.name);
@@ -77,7 +73,6 @@ export class MyDurableObject implements DurableObject.Stub {
     },
   }, {
     404: { message: "Requested URL or method is not available." },
-
     500: ({ error }) => ({ message: "Unexpected error.", stack: error?.stack }),
   });
 }

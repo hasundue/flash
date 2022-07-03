@@ -23,7 +23,7 @@ export type ResourceRoutes<C extends Context, Ps extends Path> = Readonly<
 export type ErrorRoutes<C extends Context> = Readonly<
   Partial<
     {
-      [E in ErrorStatus]: ErrorImpl<C, E>;
+      [E in 404 | 500]: ErrorImpl<C, E>;
     }
   >
 >;

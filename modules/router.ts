@@ -28,25 +28,31 @@ export type ErrorRoutes<C extends Context> = Readonly<
   >
 >;
 
-export type Routes<C extends Context, Ps extends Path> = Readonly<
-  & ResourceRoutes<C, Ps>
-  & ErrorRoutes<C>
-  & {
-    formatter?: FormatterInit;
+export type RouteKey = Path | 404 | 500 | "format";
+
+export type Routes<C extends Context, Ks extends RouteKey> = Readonly<
+  {
+    [K in Ks]: K extends Path ? Resource<C, K, Status, EntityType>
+      : K extends 404 | 500 ? ErrorImpl<C, K>
+      : FormatterInit;
   }
 >;
 
-export class Router<C extends Context, Ps extends Path>
-  implements RouterMethods<C> {
-  private routes: ResourceRoutes<C, Ps>;
-  private errors: ErrorRoutes<C>;
+export class Router<
+  C extends Context,
+  Ks extends RouteKey,
+  Ps extends Ks & Path,
+> implements RouterMethods<C> {
+  private routes: Routes<C, Ks>;
   private formatter?: FormatterInit;
 
-  constructor(routes: ResourceRoutes<C, Ps>, errors?: ErrorRoutes<C>) {
+  constructor(routes: Routes<C, Ks>) {
     this.routes = routes;
-    this.errors = errors ?? {} as ErrorRoutes<C>;
-    // const { formatter } = routes;
-    // this.formatter = undefinedformatter;
+
+    // @ts-ignore we accept routes.format to be undefined
+    const format: FormatterInit | undefined = routes.format;
+
+    this.formatter = format;
   }
 
   route(request: Request): Handler<C> {
@@ -55,25 +61,25 @@ export class Router<C extends Context, Ps extends Path>
 
     const startTime = Date.now();
 
-    for (const route of getKeys(this.routes)) {
+    for (const route of getKeys(this.routes).filter(this.isPath)) {
       const pattern = new URLPattern({ pathname: route });
 
       if (pattern.test({ pathname })) {
         const params = pattern.exec({ pathname })?.pathname
           .groups as PathParams<Ps>;
 
-        const value = this.routes[route];
+        const resource = this.routes[route];
 
-        if (this.isMethodRoutes(value)) {
+        if (this.isMethodRoutes(resource)) {
           if (!isMethod(request.method)) continue;
 
-          const impl = value[request.method];
+          const impl = resource[request.method];
 
           if (impl !== undefined) {
             return this.evaluateResourceImpl(impl, path as Ps, params);
           }
         } else {
-          return this.evaluateResourceImpl(value, path as Ps, params);
+          return this.evaluateResourceImpl(resource, path as Ps, params);
         }
       }
     }
@@ -82,11 +88,19 @@ export class Router<C extends Context, Ps extends Path>
       `${request.method} ${pathname + search} ${Date.now() - startTime}ms`,
     );
 
-    if (this.errors[404]) {
-      return this.evaluateErrorImpl(this.errors[404], 404, path);
-    } else {
-      throw new NotFound();
+    // @ts-ignore we accept errorImpl to be undefined
+    const notFoundImpl: ErrorImpl<C, 404> | undefined = this.routes[404];
+
+    if (notFoundImpl) {
+      // @ts-ignore 400 extends Es here
+      return this.evaluateErrorImpl(404, 404, path);
     }
+
+    throw new NotFound();
+  }
+
+  private isPath(key: Ks): key is Ps {
+    return typeof key === "string" && key.match(/\/\S*/) !== null;
   }
 
   private evaluateResourceImpl<
@@ -96,7 +110,8 @@ export class Router<C extends Context, Ps extends Path>
     path: P,
     params: PathParams<P>,
   ): Handler<C> {
-    const errorImpl = this.errors[500];
+    // @ts-ignore we accept errorImpl to be undefined
+    const errorImpl: ErrorImpl<C, 500> | undefined = this.routes[500];
 
     return this.isRouteHandler(impl)
       ? async (...args: HandlerParams<C>) => {
@@ -306,8 +321,6 @@ type RouteHandler<
   | ResponseLike<S, R>
   | Promise<ResponseLike<S, R>>;
 
-export type ResourceType = EntityType | EntityType[];
-
 type ErrorHandler<
   C extends Context,
   E extends ErrorStatus,
@@ -322,16 +335,21 @@ type ErrorHandler<
   },
 ) => R | Promise<R> | ResponseLike<E, R> | Promise<ResponseLike<E, R>>;
 
-type ErrorType = string | Readonly<Record<string, unknown>>;
+export type ResourceType = EntityType | EntityType[];
+
+export type EntityType =
+  | Record<string, unknown>
+  | Primitive
+  | Primitive[];
+
+type ErrorType =
+  | string
+  | Record<string, unknown>
+  | null;
 
 export type ReturnType = ErrorType | ResourceType;
 
 type Primitive = string | number | boolean | null;
-
-export type EntityType =
-  | Readonly<Record<string, unknown>>
-  | Primitive
-  | Primitive[];
 
 // TODO: Add Readonly to this
 export type ResponseLike<S extends Status, R extends ReturnType> =

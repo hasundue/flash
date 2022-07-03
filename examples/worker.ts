@@ -29,7 +29,6 @@ export default flare({
       return response.status == 200 ? body : { 404: body };
     },
   },
-}, {
   404: { message: "Requested URL or method is not available." },
   500: ({ error }) => ({ message: "Unexpected error.", stack: error?.stack }),
 });
@@ -70,7 +69,6 @@ export class MyDurableObject implements DurableObject.Stub {
         return value ?? { 404: `User '${params.name}' not found.` };
       },
     },
-  }, {
     404: { message: "Requested URL or method is not available." },
     500: ({ error }) => ({ message: "Unexpected error.", stack: error?.stack }),
   });

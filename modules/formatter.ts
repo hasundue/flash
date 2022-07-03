@@ -1,5 +1,5 @@
 import { ErrorStatus, Status, STATUS_TEXT, SuccessStatus } from "../deps.ts";
-import { getKey, getKeys, getObject, getValues, PickOne } from "./types.ts";
+import { getKey, getKeys, getObject, getValues } from "./types.ts";
 import { ResponseLike, ReturnType } from "./router.ts";
 
 type Format = { message: true };

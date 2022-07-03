@@ -14,16 +14,18 @@ import {
 
 class NotFound extends Error {}
 
-type ResourceRoutes<C extends Context, Ps extends Path> = Readonly<
+export type ResourceRoutes<C extends Context, Ps extends Path> = Readonly<
   {
     [P in Ps]: Resource<C, P, Status, EntityType>;
   }
 >;
 
-type ErrorRoutes<C extends Context> = Readonly<
-  {
-    [E in ErrorStatus]?: ErrorImpl<C, E>;
-  }
+export type ErrorRoutes<C extends Context> = Readonly<
+  Partial<
+    {
+      [E in ErrorStatus]: ErrorImpl<C, E>;
+    }
+  >
 >;
 
 export type Routes<C extends Context, Ps extends Path> = Readonly<
@@ -40,11 +42,11 @@ export class Router<C extends Context, Ps extends Path>
   private errors: ErrorRoutes<C>;
   private formatter?: FormatterInit;
 
-  constructor(routes: Routes<C, Ps>) {
+  constructor(routes: ResourceRoutes<C, Ps>, errors?: ErrorRoutes<C>) {
     this.routes = routes;
-    this.errors = routes;
-    const { formatter } = routes;
-    this.formatter = formatter;
+    this.errors = errors ?? {} as ErrorRoutes<C>;
+    // const { formatter } = routes;
+    // this.formatter = undefinedformatter;
   }
 
   route(request: Request): Handler<C> {
@@ -92,7 +94,7 @@ export class Router<C extends Context, Ps extends Path>
   >(
     impl: ResourceImpl<C, P, Status, ResourceType>,
     path: P,
-    params: PathParams<P> | undefined,
+    params: PathParams<P>,
   ): Handler<C> {
     const errorImpl = this.errors[500];
 
@@ -105,7 +107,7 @@ export class Router<C extends Context, Ps extends Path>
             ? this.formatResponseLike(value)
             : this.formatResponseLike(getResponseLike(200, value));
         } catch (error) {
-          if (errorImpl !== undefined) {
+          if (error instanceof Error && errorImpl !== undefined) {
             const handler = this.evaluateErrorImpl(
               errorImpl,
               500,
@@ -295,9 +297,8 @@ type RouteHandler<
 > = (
   args: HandlerArgs<C> & {
     path: P;
-    params?: PathParams<P>;
+    params: PathParams<P>;
     // storage: Storage<C>;
-    error?: Error;
   },
 ) =>
   | R
@@ -332,6 +333,7 @@ export type EntityType =
   | Primitive
   | Primitive[];
 
+// TODO: Add Readonly to this
 export type ResponseLike<S extends Status, R extends ReturnType> =
   & {
     [code in S]: R;

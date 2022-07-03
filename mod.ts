@@ -1,6 +1,12 @@
 import type { WorkerContext, WorkerRequest } from "./deps.ts";
 
-import { Path, Router, Routes } from "./modules/router.ts";
+import {
+  ErrorRoutes,
+  Path,
+  ResourceRoutes,
+  Router,
+  Routes,
+} from "./modules/router.ts";
 
 export type { Routes } from "./modules/router.ts";
 
@@ -76,10 +82,14 @@ export interface RouterMethods<C extends Context> {
   route: (request: Request) => Handler<C>;
 }
 
-export function RestAPI<C extends Context, Ps extends Path>(
-  routes: Routes<C, Ps>,
+export function RestAPI<
+  C extends Context,
+  Ps extends Path,
+>(
+  routes: ResourceRoutes<C, Ps>,
+  errors?: ErrorRoutes<C>,
 ): Handler<C> {
-  const router = new Router(routes);
+  const router = new Router(routes, errors);
 
   return async (...args: Parameters<Handler<C>>) => {
     const handler = router.route(args[0]);
@@ -87,12 +97,18 @@ export function RestAPI<C extends Context, Ps extends Path>(
   };
 }
 
-export function flare<Ps extends Path>(routes: Routes<Worker, Ps>) {
+export function flare<Ps extends Path>(
+  routes: ResourceRoutes<Worker, Ps>,
+  errors?: ErrorRoutes<Worker>,
+) {
   return {
-    fetch: RestAPI(routes),
+    fetch: RestAPI(routes, errors),
   };
 }
 
-export function fetcher<Ps extends Path>(routes: Routes<DurableObject, Ps>) {
-  return RestAPI(routes);
+export function fetcher<Ps extends Path>(
+  routes: Routes<DurableObject, Ps>,
+  errors?: ErrorRoutes<DurableObject>,
+) {
+  return RestAPI(routes, errors);
 }

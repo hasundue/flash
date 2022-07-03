@@ -71,11 +71,12 @@ flare({
 
 ### Error Handlers
 
-You can define error handlers within a router:
+You can define error handlers using the same interface as router:
 
 ```typescript
 flare({
   "/": "Welcome to flash!",
+}, {
   404: "Not Found",
   500: "Unexpected Error",
 });
@@ -141,13 +142,13 @@ You can add different formatters for each response status:
 flare({
   // [200] "Hello"
   "/": "Hello",
-
+}, {
   // [400] "Not Found",
   404: "Not Found",
 
   // [500] { message: "Unexpected Error" }
   500: "Unexpected Error",
-
+}, {
   format: {
     error: { message: true },
     400: { message: false },

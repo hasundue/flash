@@ -26,18 +26,16 @@ export default flare({
     },
   },
   "/users/:name": {
-    GET: async ({ request, env, params }) => {
+    GET: async ({ request, env }) => {
       const response = await DurableObject.fetch(env.do, "/users", request);
       const body = await response.json();
       return response.status == 200 ? body : { 404: body };
     },
   },
-  // [404 Not Found] { message: "URL not exist" }
-  // 404: { message: "Requested URL or method is not available." },
-  // [500 Internal Server Error] { message: "Unexpected error.", stack: "..." }
-  // 500: () => ({ message: "Unexpected error." }),
+}, {
+  404: { message: "Requested URL or method is not available." },
 
-  // formatter: { error: { message: true } },
+  500: ({ error }) => ({ message: "Unexpected error.", stack: error?.stack }),
 });
 
 export class MyDurableObject implements DurableObject.Stub {
@@ -77,11 +75,9 @@ export class MyDurableObject implements DurableObject.Stub {
         return value ?? { 404: `User '${params.name}' not found.` };
       },
     },
-
+  }, {
     404: { message: "Requested URL or method is not available." },
 
     500: ({ error }) => ({ message: "Unexpected error.", stack: error?.stack }),
-
-    formatter: { error: { message: true } },
   });
 }

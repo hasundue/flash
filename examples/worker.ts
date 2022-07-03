@@ -9,7 +9,6 @@ declare module "../mod.ts" {
 
 export default flare({
   "/": {
-    // [200 OK] { message: "Welcome to flash!" }
     GET: { 200: "Welcome to flash!" },
   },
   "/users": {

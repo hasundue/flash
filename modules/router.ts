@@ -74,13 +74,13 @@ export class Router<
       `${request.method} ${pathname + search} ${Date.now() - startTime}ms`,
     );
 
-    const notFoundImpl: ErrorImpl<C, 404, ErrorType> | undefined =
-      // @ts-ignore we accept errorImpl to be undefined
-      this.routes[404];
+    const maybeNotFoundKey =
+      getKeys(this.routes).filter(this.isNotFoundStatus)[0];
 
-    if (notFoundImpl) {
-      // @ts-ignore 400 extends Es here
-      return this.evaluateErrorImpl(this.routes[404], 404, path);
+    const maybeNotFoundImpl = this.routes[maybeNotFoundKey];
+
+    if (maybeNotFoundImpl) {
+      return this.evaluateErrorImpl(maybeNotFoundImpl, 404, path);
     }
 
     throw new NotFound();
@@ -90,6 +90,14 @@ export class Router<
     return typeof key === "string" && key.match(/\/\S*/) !== null;
   }
 
+  private isNotFoundStatus(key: Ks): key is Ks & 404 {
+    return key === 404;
+  }
+
+  private isErrorStatus(key: Ks): key is Ks & 500 {
+    return key === 500;
+  }
+
   private evaluateResourceImpl<
     P extends Ps,
   >(
@@ -97,9 +105,9 @@ export class Router<
     path: P,
     params: PathParams<P>,
   ): Handler<C> {
-    const errorImpl: ErrorImpl<C, 500, ErrorType> | undefined =
-      // @ts-ignore we accept errorImpl to be undefined
-      this.routes[500];
+    const maybeErrorKey = getKeys(this.routes).filter(this.isErrorStatus)[0];
+
+    const maybeErrorImpl = this.routes[maybeErrorKey];
 
     return this.isRouteHandler(impl)
       ? async (...args: HandlerParams<C>) => {
@@ -110,9 +118,9 @@ export class Router<
             ? this.formatResponseLike(value)
             : this.formatResponseLike(getResponseLike(200, value));
         } catch (error) {
-          if (error instanceof Error && errorImpl !== undefined) {
+          if (error instanceof Error && maybeErrorImpl !== undefined) {
             const handler = this.evaluateErrorImpl(
-              errorImpl,
+              maybeErrorImpl,
               500,
               path,
               params,

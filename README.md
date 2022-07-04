@@ -54,6 +54,10 @@ And deploy with [Denoflare](https://denoflare.dev/)!
 $ denoflare push index.ts --name flash-demo
 ```
 
+## Examples
+
+- [/examples/worker.ts](/examples/worker.ts): An example app for the integration test
+
 ## APIs
 
 ### Routers

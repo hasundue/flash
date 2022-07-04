@@ -1,6 +1,6 @@
 import { ErrorStatus, Status, STATUS_TEXT, SuccessStatus } from "../deps.ts";
 import { getKey, getKeys, getObject, getValues } from "./types.ts";
-import { ResponseLike, ReturnType } from "./router.ts";
+import { ResponseLike, ResponseType } from "./router.ts";
 
 type Format = { message: true };
 
@@ -65,7 +65,7 @@ export class Formatter {
     }
   }
 
-  format<S extends Status, R extends ReturnType>(
+  format<S extends Status, R extends ResponseType>(
     precursor: ResponseLike<S, R>,
   ): Response {
     const statusAndBody: { [P in S]: R } = precursor;

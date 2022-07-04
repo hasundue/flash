@@ -1,3 +1,5 @@
+// @ts-nocheck TODO: the error handler for 500 is not type-infered correctly for some reason
+
 import { fetcher, flare } from "../mod.ts";
 import * as DurableObject from "../modules/durable_object.ts";
 

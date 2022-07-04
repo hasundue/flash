@@ -14,26 +14,12 @@ import {
 
 class NotFound extends Error {}
 
-export type ResourceRoutes<C extends Context, Ps extends Path> = Readonly<
-  {
-    [P in Ps]: Resource<C, P, Status, EntityType>;
-  }
->;
-
-export type ErrorRoutes<C extends Context> = Readonly<
-  Partial<
-    {
-      [E in 404 | 500]: ErrorImpl<C, E>;
-    }
-  >
->;
-
 export type RouteKey = Path | 404 | 500 | "format";
 
 export type Routes<C extends Context, Ks extends RouteKey> = Readonly<
   {
     [K in Ks]: K extends Path ? Resource<C, K, Status, EntityType>
-      : K extends 404 | 500 ? ErrorImpl<C, K>
+      : K extends 404 | 500 ? ErrorImpl<C, K, ErrorType>
       : FormatterInit;
   }
 >;
@@ -88,12 +74,13 @@ export class Router<
       `${request.method} ${pathname + search} ${Date.now() - startTime}ms`,
     );
 
-    // @ts-ignore we accept errorImpl to be undefined
-    const notFoundImpl: ErrorImpl<C, 404> | undefined = this.routes[404];
+    const notFoundImpl: ErrorImpl<C, 404, ErrorType> | undefined =
+      // @ts-ignore we accept errorImpl to be undefined
+      this.routes[404];
 
     if (notFoundImpl) {
       // @ts-ignore 400 extends Es here
-      return this.evaluateErrorImpl(404, 404, path);
+      return this.evaluateErrorImpl(this.routes[404], 404, path);
     }
 
     throw new NotFound();
@@ -110,8 +97,9 @@ export class Router<
     path: P,
     params: PathParams<P>,
   ): Handler<C> {
-    // @ts-ignore we accept errorImpl to be undefined
-    const errorImpl: ErrorImpl<C, 500> | undefined = this.routes[500];
+    const errorImpl: ErrorImpl<C, 500, ErrorType> | undefined =
+      // @ts-ignore we accept errorImpl to be undefined
+      this.routes[500];
 
     return this.isRouteHandler(impl)
       ? async (...args: HandlerParams<C>) => {
@@ -144,8 +132,12 @@ export class Router<
       };
   }
 
-  private evaluateErrorImpl<P extends Path, E extends ErrorStatus>(
-    impl: ErrorImpl<C, E>,
+  private evaluateErrorImpl<
+    E extends ErrorStatus,
+    T extends ErrorType,
+    P extends Path,
+  >(
+    impl: ErrorImpl<C, E, T>,
     status: E,
     path?: P,
     params?: PathParams<P>,
@@ -168,7 +160,7 @@ export class Router<
       };
   }
 
-  private formatResponseLike<S extends Status, R extends ReturnType>(
+  private formatResponseLike<S extends Status, R extends ResponseType>(
     like: ResponseLike<S, R>,
   ): Response {
     const formatter = new Formatter(this.formatter);
@@ -196,16 +188,16 @@ export class Router<
     return typeof impl === "function";
   }
 
-  private isErrorHandler<E extends ErrorStatus, R extends ErrorType>(
-    impl: ErrorImpl<C, E>,
-  ): impl is ErrorHandler<C, E, R> {
+  private isErrorHandler<E extends ErrorStatus, T extends ErrorType>(
+    impl: ErrorImpl<C, E, T>,
+  ): impl is ErrorHandler<C, E, T> {
     return typeof impl === "function";
   }
 }
 
 function getResponseLike<
   S extends Status,
-  R extends ReturnType,
+  R extends ResponseType,
 >(
   status: S,
   value: R,
@@ -292,17 +284,13 @@ type ResourceImpl<
   R extends ResourceType,
 > =
   | RouteHandler<C, P, S, R>
-  // | ResponseLike<S, R>
+  | ResponseLike<S, R>
   | R;
 
-type ErrorImpl<C extends Context, E extends ErrorStatus> =
-  | ErrorHandler<
-    C,
-    E,
-    ErrorType
-  >
-  | ResponseLike<E, ErrorType>
-  | ErrorType;
+type ErrorImpl<C extends Context, E extends ErrorStatus, T extends ErrorType> =
+  | ErrorHandler<C, E, T>
+  | ResponseLike<E, T>
+  | T;
 
 type RouteHandler<
   C extends Context,
@@ -324,7 +312,7 @@ type RouteHandler<
 type ErrorHandler<
   C extends Context,
   E extends ErrorStatus,
-  R extends ErrorType,
+  T extends ErrorType,
 > = (
   args: HandlerArgs<C> & {
     status: E;
@@ -333,7 +321,7 @@ type ErrorHandler<
     error: Error | undefined;
     // storage: Storage<C>;
   },
-) => R | Promise<R> | ResponseLike<E, R> | Promise<ResponseLike<E, R>>;
+) => T | Promise<T> | ResponseLike<E, T> | Promise<ResponseLike<E, T>>;
 
 export type ResourceType = EntityType | EntityType[];
 
@@ -347,18 +335,18 @@ type ErrorType =
   | Record<string, unknown>
   | null;
 
-export type ReturnType = ErrorType | ResourceType;
+export type ResponseType = ErrorType | ResourceType;
 
 type Primitive = string | number | boolean | null;
 
 // TODO: Add Readonly to this
-export type ResponseLike<S extends Status, R extends ReturnType> =
+export type ResponseLike<S extends Status, R extends ResponseType> =
   & {
     [code in S]: R;
   }
   & ResponseInit;
 
-function isResponseLike<S extends Status, R extends ReturnType>(
+function isResponseLike<S extends Status, R extends ResponseType>(
   value: R | ResponseLike<S, R>,
 ): value is ResponseLike<S, R> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {

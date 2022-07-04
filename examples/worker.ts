@@ -30,7 +30,8 @@ export default flare({
     },
   },
   404: { message: "Requested URL or method is not available." },
-  500: ({ error }: { error: Error | undefined }) => ({
+
+  500: ({ error }: { error?: Error }) => ({
     message: "Unexpected error.",
     stack: error?.stack,
   }),
@@ -73,6 +74,10 @@ export class MyDurableObject implements DurableObject.Stub {
       },
     },
     404: { message: "Requested URL or method is not available." },
-    500: ({ error }) => ({ message: "Unexpected error.", stack: error?.stack }),
+
+    500: ({ error }: { error?: Error }) => ({
+      message: "Unexpected error.",
+      stack: error?.stack,
+    }),
   });
 }

@@ -74,13 +74,11 @@ export class Router<
       `${request.method} ${pathname + search} ${Date.now() - startTime}ms`,
     );
 
-    const maybeNotFoundKey =
-      getKeys(this.routes).filter(this.isNotFoundStatus)[0];
-
-    const maybeNotFoundImpl = this.routes[maybeNotFoundKey];
+    const maybe404 = getKeys(this.routes).filter(this.isNotFoundStatus)[0];
+    const maybeNotFoundImpl = this.routes[maybe404];
 
     if (maybeNotFoundImpl) {
-      return this.evaluateErrorImpl(maybeNotFoundImpl, 404, path);
+      return this.evaluateErrorImpl(maybeNotFoundImpl, 404, path, {});
     }
 
     throw new NotFound();
@@ -91,11 +89,11 @@ export class Router<
   }
 
   private isNotFoundStatus(key: Ks): key is Ks & 404 {
-    return key === 404;
+    return key == 404;
   }
 
   private isErrorStatus(key: Ks): key is Ks & 500 {
-    return key === 500;
+    return key == 500;
   }
 
   private evaluateResourceImpl<
@@ -105,9 +103,8 @@ export class Router<
     path: P,
     params: PathParams<P>,
   ): Handler<C> {
-    const maybeErrorKey = getKeys(this.routes).filter(this.isErrorStatus)[0];
-
-    const maybeErrorImpl = this.routes[maybeErrorKey];
+    const maybe500 = getKeys(this.routes).filter(this.isErrorStatus)[0];
+    const maybeErrorImpl = this.routes[maybe500];
 
     return this.isRouteHandler(impl)
       ? async (...args: HandlerParams<C>) => {
@@ -147,8 +144,8 @@ export class Router<
   >(
     impl: ErrorImpl<C, E, T>,
     status: E,
-    path?: P,
-    params?: PathParams<P>,
+    path: P,
+    params: PathParams<P>,
     error?: Error,
   ): Handler<C> {
     return this.isErrorHandler(impl)
@@ -324,8 +321,8 @@ type ErrorHandler<
 > = (
   args: HandlerArgs<C> & {
     status: E;
-    path: Path | undefined;
-    params: PathParams<Path> | undefined;
+    path: Path;
+    params: PathParams<Path>;
     error: Error | undefined;
     // storage: Storage<C>;
   },

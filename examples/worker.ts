@@ -1,5 +1,3 @@
-// @ts-nocheck TODO: the error handler for 500 is not type-infered correctly for some reason
-
 import { fetcher, flare } from "../mod.ts";
 import * as DurableObject from "../modules/durable_object.ts";
 
@@ -32,7 +30,10 @@ export default flare({
     },
   },
   404: { message: "Requested URL or method is not available." },
-  500: ({ error }) => ({ message: "Unexpected error.", stack: error?.stack }),
+  500: ({ error }: { error: Error | undefined }) => ({
+    message: "Unexpected error.",
+    stack: error?.stack,
+  }),
 });
 
 export class MyDurableObject implements DurableObject.Stub {

@@ -255,20 +255,24 @@ function getResponseLike<
 
 export type Path = `/${string}`;
 
-// deno-fmt-ignore
-type Parent<P extends Path> = ParentDir<P> extends `${infer S extends Path}/` ? S : P;
+type Parent<P extends Path> = ParentDir<P> extends `${infer S extends Path}/`
+  ? S
+  : P;
 
-// deno-fmt-ignore
 type ParentDir<P extends string> = P extends `${infer Head}/${infer Tail}`
-    ? `${Head}/${ParentDir<Tail>}`
-    : "";
+  ? `${Head}/${ParentDir<Tail>}`
+  : "";
 
-type PathKey<PathItem extends string> = PathItem extends `${infer Key}` ? Key
+// deno-fmt-ignore
+type PathKey<PathItem extends string> = PathItem extends `${infer Key}`
+  ? Key
   : never;
 
-type PathKeys<PathString extends string> = PathString extends
-  `${infer PathItem}/${infer Others}` ? PathKey<PathItem> | PathKeys<Others>
-  : PathKey<PathString>;
+// deno-fmt-ignore
+type PathKeys<PathString extends string> =
+  PathString extends `${infer PathItem}/${infer Others}`
+    ? PathKey<PathItem> | PathKeys<Others>
+    : PathKey<PathString>;
 
 type PathParams<PathString extends string> = PathKeys<PathString> extends never
   ? BasePathParams
@@ -293,15 +297,7 @@ export function parentOf<P extends Path>(path: P): Parent<P> {
 export function getStoragePath<P extends Path, Q extends P | Parent<P>>(
   path: P,
 ): Q {
-  try {
-    // @ts-ignore we check if this cause a TypeError
-    return parentOf(path);
-  } catch (error) {
-    if (error instanceof TypeError) {
-      return path as Q;
-    }
-    throw Error();
-  }
+  return path as Q;
 }
 
 // type ItemIdentifier = `/:${string}`;
@@ -367,7 +363,7 @@ type MethodRoutes<
       Q,
       Status,
       T,
-      R
+      ResourceType
     >;
   }
 >;

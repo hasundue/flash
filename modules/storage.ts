@@ -5,7 +5,7 @@ import * as DurableObject from "../modules/durable_object.ts";
 export class Storage<
   C extends Context,
   P extends Path,
-  T extends DurableObject.StorageValue,
+  T extends EntityType,
 > {
   private env: WorkerEnv;
   private host: string;

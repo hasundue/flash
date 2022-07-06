@@ -25,7 +25,7 @@ export type Routes<C extends Context, Ks extends RouteKey> = Readonly<
   {
     // TODO: infer specific types of Status, EntityType, and ErrorType
     [K in Ks]: K extends Path ? Resource<C, K, Status, EntityType>
-      : K extends 404 | 500 ? ErrorImpl<C, K, ErrorType>
+      : K extends 404 | 500 ? ErrorImpl<C, Path, K, ErrorType>
       : FormatterInit;
   }
 >;
@@ -177,7 +177,7 @@ export class Router<
     T extends ErrorType,
     P extends Path,
   >(
-    impl: ErrorImpl<C, E, T>,
+    impl: ErrorImpl<C, P, E, T>,
     status: E,
     path: P,
     params: PathParams<P>,
@@ -209,13 +209,13 @@ export class Router<
 
   private isMethodRoutes<
     P extends Ps,
-    Q extends P | Parent<P>,
     S extends Status,
     T extends EntityType,
-    R extends Q extends P ? T[] : T,
   >(
     resource: Resource<C, P, S, T>,
-  ): resource is MethodRoutes<C, P, Q, S, T, R> {
+  ): resource is
+    | MethodRoutes<C, P, P, S, T, T[]>
+    | MethodRoutes<C, P, Parent<P>, S, T, T> {
     return typeof resource === "object" && resource !== null &&
       Object.keys(resource).every(isMethod);
   }
@@ -232,9 +232,13 @@ export class Router<
     return typeof impl === "function";
   }
 
-  private isErrorHandler<E extends ErrorStatus, T extends ErrorType>(
-    impl: ErrorImpl<C, E, T>,
-  ): impl is ErrorHandler<C, E, T> {
+  private isErrorHandler<
+    E extends ErrorStatus,
+    P extends Path,
+    T extends ErrorType,
+  >(
+    impl: ErrorImpl<C, P, E, T>,
+  ): impl is ErrorHandler<C, P, E, T> {
     return typeof impl === "function";
   }
 }
@@ -252,12 +256,12 @@ function getResponseLike<
 export type Path = `/${string}`;
 
 // deno-fmt-ignore
-type Parent<P extends string> =
-  P extends `/${infer Head}/${infer Tail}`
-    ? `/${Head}/${Parent<Tail>}`
-    : "";
+type Parent<P extends Path> = ParentDir<P> extends `${infer S extends Path}/` ? S : P;
 
-type test = Parent<"/hoge/fuga">;
+// deno-fmt-ignore
+type ParentDir<P extends string> = P extends `${infer Head}/${infer Tail}`
+    ? `${Head}/${ParentDir<Tail>}`
+    : "";
 
 type PathKey<PathItem extends string> = PathItem extends `${infer Key}` ? Key
   : never;
@@ -380,8 +384,13 @@ type ResourceImpl<
   | ResponseLike<S, R>
   | R;
 
-type ErrorImpl<C extends Context, E extends ErrorStatus, T extends ErrorType> =
-  | ErrorHandler<C, E, T>
+type ErrorImpl<
+  C extends Context,
+  P extends Path,
+  E extends ErrorStatus,
+  T extends ErrorType,
+> =
+  | ErrorHandler<C, P, E, T>
   | ResponseLike<E, T>
   | T;
 
@@ -406,13 +415,14 @@ type RouteHandler<
 
 type ErrorHandler<
   C extends Context,
+  P extends Path,
   E extends ErrorStatus,
   T extends ErrorType,
 > = (
   args: HandlerArgs<C> & {
     status: E;
-    path: Path;
-    params: PathParams<Path>;
+    path: P;
+    params: PathParams<P>;
     error: Error | undefined;
     // storage: Storage<C>;
   },

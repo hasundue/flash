@@ -22,7 +22,14 @@ Deno.test('parentOf("/users/:name")', () => {
   );
 });
 
-Deno.test('getStoragePath("/users/:name")', () => {
+Deno.test('getStoragePath("/users")', () => {
+  assertEquals(
+    getStoragePath<"/users", "/users">("/users"),
+    "/users",
+  );
+});
+
+Deno.test('getStoragePath<"/users/:name", "/users">("/users/:name")', () => {
   assertEquals(
     getStoragePath<"/users/:name", "/users">("/users/:name"),
     "/users",

@@ -1,6 +1,7 @@
 export type {
   DurableObjectNamespace,
   DurableObjectState,
+  DurableObjectStorageValue,
   DurableObjectStub,
   IncomingRequestCf as WorkerRequest,
   ModuleWorkerContext as WorkerContext,

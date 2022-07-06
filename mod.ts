@@ -1,11 +1,12 @@
 import type { WorkerContext, WorkerRequest } from "./deps.ts";
 
 import { RouteKey, Router, Routes } from "./modules/router.ts";
+import { Namespace as DurableObjectNamespace } from "./modules/durable_object.ts";
 
 export type { Routes } from "./modules/router.ts";
 
-// deno-lint-ignore no-empty-interface
 export interface WorkerEnv {
+  storage: DurableObjectNamespace;
 }
 
 export type Context = Worker | DurableObject;
@@ -41,6 +42,13 @@ type WorkerHandlerArgs = {
   env: WorkerEnv;
   context: WorkerContext;
 };
+
+export function isWorkerHandlerArgs(
+  args: HandlerArgs<Context>,
+): args is HandlerArgs<Worker> {
+  // @ts-ignore we have to check if args.env and args.env are not undefined
+  return args.env !== undefined && args.env !== undefined;
+}
 
 type DurableObjectHandlerArgs = {
   request: Request;

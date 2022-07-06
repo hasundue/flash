@@ -1,10 +1,11 @@
 import type {
   DurableObjectNamespace as Namespace,
   DurableObjectState as State,
+  DurableObjectStorageValue as StorageValue,
   DurableObjectStub as Stub,
 } from "../deps.ts";
 
-export type { Namespace, State, Stub };
+export type { Namespace, State, StorageValue, Stub };
 
 export function fetch(
   namespace: Namespace,

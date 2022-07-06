@@ -1,7 +1,12 @@
 import { ErrorStatus, Status } from "../deps.ts";
 import { getKeys, getObject } from "./types.ts";
 import { Formatter, FormatterInit } from "./formatter.ts";
-import { getHandlerArgs } from "../mod.ts";
+import {
+  DurableObject,
+  getHandlerArgs,
+  isWorkerHandlerArgs,
+  Worker,
+} from "../mod.ts";
 
 import {
   Context,
@@ -10,7 +15,7 @@ import {
   HandlerParams,
   RouterMethods,
 } from "../mod.ts";
-// import { Storage } from "./storage.ts";
+import { Storage } from "./storage.ts";
 
 class NotFound extends Error {}
 
@@ -18,6 +23,7 @@ export type RouteKey = Path | 404 | 500 | "format";
 
 export type Routes<C extends Context, Ks extends RouteKey> = Readonly<
   {
+    // TODO: infer specific types of Status, EntityType, and ErrorType
     [K in Ks]: K extends Path ? Resource<C, K, Status, EntityType>
       : K extends 404 | 500 ? ErrorImpl<C, K, ErrorType>
       : FormatterInit;
@@ -41,8 +47,14 @@ export class Router<
     this.formatter = format;
   }
 
-  route(request: Request): Handler<C> {
-    const { search, pathname } = new URL(request.url);
+  route<
+    P extends Ps,
+    Q extends P | Parent<P>,
+    S extends Status,
+    T extends EntityType,
+    R extends Q extends P ? T[] : T,
+  >(request: Request): Handler<C> {
+    const { host, pathname, search } = new URL(request.url);
     const path = pathname as Path;
 
     const startTime = Date.now();
@@ -54,18 +66,24 @@ export class Router<
         const params = pattern.exec({ pathname })?.pathname
           .groups as PathParams<Ps>;
 
-        const resource = this.routes[route];
+        const resource = this.routes[route] as Resource<C, P, S, T>;
 
         if (this.isMethodRoutes(resource)) {
           if (!isMethod(request.method)) continue;
 
-          const impl = resource[request.method];
+          // deno-fmt-ignore
+          const impl = resource[request.method] as ResourceImpl<C, P, Q, S, T, R>;
 
           if (impl !== undefined) {
-            return this.evaluateResourceImpl(impl, path as Ps, params);
+            return this.evaluateResourceImpl(impl, host, path as P, params);
           }
         } else {
-          return this.evaluateResourceImpl(resource, path as Ps, params);
+          return this.evaluateResourceImpl(
+            resource as ResourceImpl<C, P, Q, S, T, R>,
+            host,
+            path as P,
+            params,
+          );
         }
       }
     }
@@ -78,7 +96,12 @@ export class Router<
     const maybeNotFoundImpl = this.routes[maybe404];
 
     if (maybeNotFoundImpl) {
-      return this.evaluateErrorImpl(maybeNotFoundImpl, 404, path, {});
+      return this.evaluateErrorImpl(
+        maybeNotFoundImpl,
+        404,
+        path,
+        {} as PathParams<Path>,
+      );
     }
 
     throw new NotFound();
@@ -98,8 +121,13 @@ export class Router<
 
   private evaluateResourceImpl<
     P extends Ps,
+    Q extends P | Parent<P>,
+    S extends Status,
+    T extends EntityType,
+    R extends Q extends P ? T[] : T,
   >(
-    impl: ResourceImpl<C, P, Status, ResourceType>,
+    impl: ResourceImpl<C, P, Q, S, T, R>,
+    host: string,
     path: P,
     params: PathParams<P>,
   ): Handler<C> {
@@ -109,8 +137,15 @@ export class Router<
     return this.isRouteHandler(impl)
       ? async (...args: HandlerParams<C>) => {
         const record = getHandlerArgs(args);
+
+        const storagePath = getStoragePath<P, Q>(path);
+
+        const storage = isWorkerHandlerArgs(record)
+          ? new Storage<Worker, Q, T>(record.env, host, storagePath)
+          : {} as Storage<DurableObject, Q, T>;
+
         try {
-          const value = await impl({ ...record, path, params });
+          const value = await impl({ ...record, storage, path, params });
           return isResponseLike(value)
             ? this.formatResponseLike(value)
             : this.formatResponseLike(getResponseLike(200, value));
@@ -174,22 +209,26 @@ export class Router<
 
   private isMethodRoutes<
     P extends Ps,
+    Q extends P | Parent<P>,
     S extends Status,
-    V extends EntityType,
+    T extends EntityType,
+    R extends Q extends P ? T[] : T,
   >(
-    resource: Resource<C, P, S, V>,
-  ): resource is MethodRoutes<C, P, S, V> | MethodRoutes<C, P, S, V[]> {
+    resource: Resource<C, P, S, T>,
+  ): resource is MethodRoutes<C, P, Q, S, T, R> {
     return typeof resource === "object" && resource !== null &&
       Object.keys(resource).every(isMethod);
   }
 
   private isRouteHandler<
     P extends Path,
+    Q extends StoragePath,
     S extends Status,
+    T extends EntityType,
     R extends ResourceType,
   >(
-    impl: ResourceImpl<C, P, S, R>,
-  ): impl is RouteHandler<C, P, S, R> {
+    impl: ResourceImpl<C, P, Q, S, T, R>,
+  ): impl is RouteHandler<C, P, Q, S, T, R> {
     return typeof impl === "function";
   }
 
@@ -212,7 +251,15 @@ function getResponseLike<
 
 export type Path = `/${string}`;
 
-type PathKey<PathItem extends string> = PathItem extends `:${infer Key}` ? Key
+// deno-fmt-ignore
+type Parent<P extends string> =
+  P extends `/${infer Head}/${infer Tail}`
+    ? `/${Head}/${Parent<Tail>}`
+    : "";
+
+type test = Parent<"/hoge/fuga">;
+
+type PathKey<PathItem extends string> = PathItem extends `${infer Key}` ? Key
   : never;
 
 type PathKeys<PathString extends string> = PathString extends
@@ -224,6 +271,34 @@ type PathParams<PathString extends string> = PathKeys<PathString> extends never
   : { [key in PathKeys<PathString>]: string };
 
 type BasePathParams = Record<string, string | undefined>;
+
+export function parentOf<P extends Path>(path: P): Parent<P> {
+  const match = path.match(/(\/\S+)?(\/\S*$)/);
+
+  if (!match || match.length !== 3 || !match[2]) {
+    throw new Error(`Unable to parse a path: ${path}.`);
+  }
+
+  if (match[1]) {
+    return match[1] as Parent<P>;
+  } else {
+    return "/" as Parent<P>;
+  }
+}
+
+export function getStoragePath<P extends Path, Q extends P | Parent<P>>(
+  path: P,
+): Q {
+  try {
+    // @ts-ignore we check if this cause a TypeError
+    return parentOf(path);
+  } catch (error) {
+    if (error instanceof TypeError) {
+      return path as Q;
+    }
+    throw Error();
+  }
+}
 
 // type ItemIdentifier = `/:${string}`;
 
@@ -239,56 +314,69 @@ function isMethod(str: string): str is Method {
   return methods.some((method) => method == str);
 }
 
+type StoragePath = Path;
+
 type Resource<
   C extends Context,
   P extends Path,
   S extends Status,
-  V extends EntityType,
+  T extends EntityType,
 > =
-  | Collection<C, P, S, V>
-  | Entity<C, P, S, V>;
+  | Collection<C, P, S, T>
+  | Entity<C, P, S, T>;
 
 type Collection<
   C extends Context,
   P extends Path,
   S extends Status,
-  V extends EntityType,
+  T extends EntityType,
 > =
-  | MethodRoutes<C, P, S, V[]>
+  | MethodRoutes<C, P, P, S, T, T[]>
   // & Routes<C>
-  | ResourceImpl<C, P, S, V[]>;
+  | ResourceImpl<C, P, P, S, T, T[]>;
 
 type Entity<
   C extends Context,
   P extends Path,
   S extends Status,
-  V extends EntityType,
+  T extends EntityType,
 > =
-  | MethodRoutes<C, P, S, V>
+  | MethodRoutes<C, P, Parent<P>, S, T, T>
   // & Routes<C>
-  | ResourceImpl<C, P, S, V>;
+  | ResourceImpl<C, P, Parent<P>, S, T, T>;
 
 type MethodRoutes<
   C extends Context,
   P extends Path,
+  Q extends Path,
   S extends Status,
+  T extends EntityType,
   R extends ResourceType,
 > = Readonly<
   & {
-    GET: ResourceImpl<C, P, S, R>;
+    GET: ResourceImpl<C, P, Q, S, T, R>;
   }
   & {
-    [M in Exclude<Method, "GET">]?: ResourceImpl<C, P, Status, ResourceType>;
+    [M in Exclude<Method, "GET">]?: ResourceImpl<
+      C,
+      P,
+      Q,
+      Status,
+      T,
+      R
+    >;
   }
 >;
 
 type ResourceImpl<
   C extends Context,
   P extends Path,
+  Q extends Path,
   S extends Status,
+  T extends EntityType,
   R extends ResourceType,
 > =
-  | RouteHandler<C, P, S, R>
+  | RouteHandler<C, P, Q, S, T, R>
   | ResponseLike<S, R>
   | R;
 
@@ -300,13 +388,15 @@ type ErrorImpl<C extends Context, E extends ErrorStatus, T extends ErrorType> =
 type RouteHandler<
   C extends Context,
   P extends Path,
+  Q extends Path,
   S extends Status,
+  T extends EntityType,
   R extends ResourceType,
 > = (
   args: HandlerArgs<C> & {
     path: P;
     params: PathParams<P>;
-    // storage: Storage<C>;
+    storage: Storage<C, Q, T>;
   },
 ) =>
   | R
@@ -342,7 +432,11 @@ type ErrorType =
 
 export type ResponseType = ErrorType | ResourceType;
 
-type Primitive = string | number | boolean | null;
+type Primitive =
+  | string
+  | number;
+// | boolean;
+// | null;
 
 // TODO: Add Readonly to this
 export type ResponseLike<S extends Status, R extends ResponseType> =

@@ -14,7 +14,8 @@ export default flare({
   "/users": {
     GET: async ({ request, env }) => {
       const response = await DurableObject.fetch(env.do, "/users", request);
-      return await response.json();
+      const json: { name: string }[] = await response.json();
+      return json;
     },
     POST: async ({ request, env }) => {
       const response = await DurableObject.fetch(env.do, "/users", request);

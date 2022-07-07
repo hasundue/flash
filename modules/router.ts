@@ -21,12 +21,21 @@ class NotFound extends Error {}
 
 export type RouteKey = Path | 404 | 500 | "format";
 
+// deno-fmt-ignore
 export type Routes<C extends Context, Ks extends RouteKey> = Readonly<
   {
     // TODO: infer specific types of Status, EntityType, and ErrorType
-    [K in Ks]: K extends Path ? Resource<C, K, Status, EntityType>
-      : K extends 404 | 500 ? ErrorImpl<C, Path, K, ErrorType>
-      : FormatterInit;
+    [K in Ks]: K extends Path
+      ? K extends "/"
+        ? Resource<C, K, Status, EntityType>
+        : Parent<K> extends "/"
+          ? Collection<C, K, Status, EntityType>
+          : Parent<Parent<K>> extends "/"
+            ? Entity<C, K, Status, EntityType>
+            : Resource<C, K, Status, EntityType>
+      : K extends 404 | 500
+        ? ErrorImpl<C, Path, K, ErrorType>
+        : FormatterInit;
   }
 >;
 
@@ -257,14 +266,14 @@ export type Path = `/${string}`;
 
 type Parent<P extends Path> = ParentDir<P> extends `${infer S extends Path}/`
   ? S
-  : P;
+  : "/";
 
 type ParentDir<P extends string> = P extends `${infer Head}/${infer Tail}`
   ? `${Head}/${ParentDir<Tail>}`
   : "";
 
 // deno-fmt-ignore
-type PathKey<PathItem extends string> = PathItem extends `${infer Key}`
+type PathKey<PathItem extends string> = PathItem extends `:${infer Key}`
   ? Key
   : never;
 

@@ -1,9 +1,8 @@
-import { Context, fetcher, WorkerEnv } from "../mod.ts";
+import { fetcher, WorkerEnv } from "../mod.ts";
 import { EntityType, Path } from "./router.ts";
 import * as DurableObject from "../modules/durable_object.ts";
 
 export class Storage<
-  C extends Context,
   P extends Path,
   T extends EntityType,
 > {
@@ -73,7 +72,7 @@ export class WorkerStorage implements DurableObject.Stub {
   }
 
   fetch = fetcher({
-    "/*": {
+    "/": {
       GET: async ({ request }) => {
         let body: { key: string | null };
 
@@ -86,7 +85,7 @@ export class WorkerStorage implements DurableObject.Stub {
         try {
           if (body.key) { // storage.get()
             const entity = await this.state.storage.get(body.key);
-            return entity;
+            return entity ?? null;
           } else { // storage.list()
             const map = await this.state.storage.list();
             return Array.from(Object.values(map));

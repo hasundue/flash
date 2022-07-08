@@ -47,7 +47,10 @@ export class MyDurableObject implements DurableObject.Stub {
 
   fetch = fetcher({
     "/users": {
-      GET: async () => await this.state.storage.list(),
+      GET: async () => {
+        const map = await this.state.storage.list();
+        return Array.from(Object.values(map));
+      },
 
       POST: async ({ request }) => {
         let body;

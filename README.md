@@ -1,6 +1,6 @@
 # flash
 
-Flash is a type-oriented web framework in TypeScript, particularly optimized for
+Flash is a declarative web framework in TypeScript, particularly optimized for
 building cloud microservices with a REST API on a serverless platforms with
 Deno.
 
@@ -19,12 +19,12 @@ Deno.
   - [x] Cloudflare Workers
   - [ ] Deno Deploy
 - [x] :magic_wand: **Progressive APIs**
-  - [ ] Tree-structured and semantic routers
   - [x] Polymorphism in resource implementation
   - [x] Syntax sugar for responses
+  - [ ] Tree-structured routers
   - [ ] Strong type inference
-- [ ] :sun_behind_small_cloud: **Out-of-box middlewares for Cloudflare Workers**
-  - [ ] Object storage associated with each resource URL
+- [ ] :sun_behind_small_cloud: **Middlewares for Cloudflare Workers**
+  - [x] Built-in object storage associated with each resource collection
   - [ ] Blocking communication among workers
 - [ ] :scroll: **Code/Doc Generation**
   - [ ] Universal Typescript SDK for clients
@@ -150,6 +150,31 @@ flare({
     400: { message: false },
   },
 });
+```
+
+### Object Storage (Cloudflare Workers)
+
+Built-in object storage associated with each resource collection, implemented
+with Durable Objects.
+
+```
+flare({
+  "/users": {
+    GET: async ({ storage }) => {
+      return await storage.list();
+    },
+    POST: async ({ request, storage }) => {
+      const body = await request.json();
+      await storage.put(body.name, body);
+      return { 201: body };
+    },
+  },
+  "/users/:name": {
+    GET: async ({ params, storage }) => {
+      return await storage.get(params.name);
+    },
+  },
+}
 ```
 
 ## Acknowledgment

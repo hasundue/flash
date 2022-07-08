@@ -157,7 +157,7 @@ flare({
 Built-in object storage associated with each resource collection, implemented
 with Durable Objects.
 
-```
+```typescript
 flare({
   "/users": {
     GET: async ({ storage }) => {

@@ -1,8 +1,7 @@
 # flash
 
 Flash is a declarative web framework in TypeScript, particularly optimized for
-building cloud microservices with a REST API on a serverless platforms with
-Deno.
+building REST APIs on serverless platforms with Deno.
 
 > **Warning**\
 > Flash is still an alpha version. Do not use it for production use yet, unless
@@ -163,15 +162,11 @@ flare({
     GET: async ({ storage }) => {
       return await storage.list();
     },
-    POST: async ({ request, storage }) => {
-      const body = await request.json();
-      await storage.put(body.name, body);
-      return { 201: body };
-    },
   },
   "/users/:name": {
-    GET: async ({ params, storage }) => {
-      return await storage.get(params.name);
+    PUT: async ({ request, params, storage }) => {
+      await storage.put(params.name, await request.json());
+      return { 201: params.name };
     },
   },
 }

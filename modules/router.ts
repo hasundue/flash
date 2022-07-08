@@ -51,7 +51,7 @@ export class Router<
   >(request: Request): Handler<C> {
     const startTime = Date.now();
 
-    const { host, pathname, search } = new URL(request.url);
+    const { origin, pathname, search } = new URL(request.url);
     const path = pathname as Path;
     const routes = getKeys(this.routes).filter(this.isPath);
 
@@ -71,11 +71,11 @@ export class Router<
 
           if (impl !== undefined) {
             // @ts-ignore TODO: fix PathParams
-            return this.evaluateRouteImpl(impl, host, path as P, params);
+            return this.evaluateRouteImpl(impl, origin, path as P, params);
           }
         } else {
           // @ts-ignore TODO: fix PathParams
-          return this.evaluateRouteImpl(resource, host, path as P, params);
+          return this.evaluateRouteImpl(resource, origin, path as P, params);
         }
       }
     }
@@ -120,7 +120,7 @@ export class Router<
       | ResourceImpl<C, P, S, T, T>
       | ResourceImpl<C, P, S, T, T[]>
       | OperationImpl<C, P, S, T, ResultType>,
-    host: string,
+    origin: string,
     path: P,
     params: PathParams<P>,
   ): Handler<C> {
@@ -134,8 +134,8 @@ export class Router<
         const storagePath = getStoragePath(path);
 
         const storage = isWorkerHandlerArgs(record)
-          ? new Storage<T>(record.env, host, storagePath)
-          : undefined;
+          ? new Storage<T>(record.env, origin, storagePath)
+          : {} as Storage<T>;
 
         try {
           const value = await impl({ ...record, storage, path, params });
@@ -248,7 +248,7 @@ function getResponseLike<
   return getObject([[status, value]]) as ResponseLike<S, R>;
 }
 
-export type Path = `/${string}`;
+export type Path = `/${string}` | "*";
 
 type Parent<P extends Path> = ParentDir<P> extends `${infer S extends Path}/`
   ? S
@@ -399,7 +399,7 @@ type ResourceHandler<
   args: HandlerArgs<C> & {
     path: P;
     params: PathParams<P>;
-    storage?: Storage<T>;
+    storage: Storage<T>;
   },
 ) =>
   | RouteReturnType<S, R>
@@ -414,8 +414,8 @@ type OperationHandler<
 > = (
   args: HandlerArgs<C> & {
     path: P;
-    params?: PathParams<P>;
-    storage?: Storage<T>;
+    params: PathParams<P>;
+    storage: Storage<T>;
   },
 ) =>
   | RouteReturnType<S, R>

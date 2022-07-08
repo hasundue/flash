@@ -66,7 +66,7 @@ Deno.test("router", async (t) => {
   const proc = await startServer(
     "./examples/worker.ts",
     "--do-namespace-binding",
-    "do:local:MyDurableObject",
+    "storage:local:WorkerStorage",
   );
 
   try {

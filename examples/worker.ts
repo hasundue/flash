@@ -1,33 +1,37 @@
-import { fetcher, flare } from "../mod.ts";
-import * as DurableObject from "../modules/durable_object.ts";
+import { flare } from "../mod.ts";
 
-declare module "../mod.ts" {
-  interface WorkerEnv {
-    readonly do: DurableObject.Namespace;
-  }
-}
+export { WorkerStorage } from "../mod.ts";
 
 export default flare({
   "/": {
     GET: { 200: "Welcome to flash!" },
   },
   "/users": {
-    GET: async ({ request, env }) => {
-      const response = await DurableObject.fetch(env.do, "/users", request);
-      const json: { name: string }[] = await response.json();
-      return json;
+    GET: async ({ storage }) => {
+      return await storage.list();
     },
-    POST: async ({ request, env }) => {
-      const response = await DurableObject.fetch(env.do, "/users", request);
-      const body = await response.json();
-      return response.status == 201 ? { 201: body } : { 400: body };
+    POST: async ({ request, storage }) => {
+      let body: { name: string };
+
+      try {
+        body = await request.json();
+      } catch {
+        return { 400: "Invalid request body." };
+      }
+
+      try {
+        await storage.put(body.name, body);
+      } catch (error) {
+        return { 500: error as string };
+      }
+
+      return { 201: body };
     },
   },
   "/users/:name": {
-    GET: async ({ request, env }) => {
-      const response = await DurableObject.fetch(env.do, "/users", request);
-      const body = await response.json();
-      return response.status == 200 ? body : { 404: body };
+    GET: async ({ params, storage }) => {
+      const entity = await storage.get(params.name);
+      return entity ?? { 404: params.name + " not found." };
     },
   },
   404: { message: "Requested URL or method is not available." },
@@ -37,48 +41,3 @@ export default flare({
     stack: error?.stack,
   }),
 });
-
-export class MyDurableObject implements DurableObject.Stub {
-  private readonly state: DurableObject.State;
-
-  constructor(state: DurableObject.State) {
-    this.state = state;
-  }
-
-  fetch = fetcher({
-    "/users": {
-      GET: async () => await this.state.storage.list(),
-
-      POST: async ({ request }) => {
-        let body;
-
-        try {
-          body = await request.json();
-        } catch {
-          return { 400: "Request body missing." };
-        }
-
-        if (!body.name) return { 400: "Field 'name' missing." };
-
-        const { name }: { name: string } = body;
-        const value = { name, awesome: true };
-
-        await this.state.storage.put(name, value);
-
-        return { 201: value };
-      },
-    },
-    "/users/:name": {
-      GET: async ({ params }) => {
-        const value = await this.state.storage.get(params.name);
-        return value ?? { 404: `User '${params.name}' not found.` };
-      },
-    },
-    404: { message: "Requested URL or method is not available." },
-
-    500: ({ error }: { error?: Error }) => ({
-      message: "Unexpected error.",
-      stack: error?.stack,
-    }),
-  });
-}

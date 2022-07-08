@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "dev": "denoflare serve examples/router.ts",
+    "dev": "denoflare serve examples/worker.ts --do-namespace-binding storage:local:WorkerStorage",
     "test": "deno test --allow-write --allow-run --allow-net"
   }
 }

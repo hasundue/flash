@@ -1,24 +1,22 @@
-import { Context, fetcher, WorkerEnv } from "../mod.ts";
+import { fetcher, WorkerEnv } from "../mod.ts";
 import { EntityType, Path } from "./router.ts";
 import * as DurableObject from "../modules/durable_object.ts";
 
 export class Storage<
-  C extends Context,
-  P extends Path,
   T extends EntityType,
 > {
   private env: WorkerEnv;
-  private host: string;
-  private path: P;
+  private origin: string;
+  private path: Path;
 
-  constructor(env: WorkerEnv, host: string, path: P) {
+  constructor(env: WorkerEnv, origin: string, path: Path) {
     this.env = env;
-    this.host = host;
+    this.origin = origin;
     this.path = path;
   }
 
   async list(): Promise<T[]> {
-    const request = new Request(this.host + this.path, {
+    const request = new Request(this.origin + "/list", {
       method: "GET",
     });
     const response = await DurableObject.fetch(
@@ -31,8 +29,8 @@ export class Storage<
   }
 
   async get(key: string): Promise<T | undefined> {
-    const request = new Request(this.host + this.path, {
-      method: "GET",
+    const request = new Request(this.origin + "/get", {
+      method: "POST",
       body: JSON.stringify({ key }),
     });
     const response = await DurableObject.fetch(
@@ -40,16 +38,16 @@ export class Storage<
       this.path,
       request,
     );
-    if (response.status !== 200) {
-      const body: { stack: string } = await response.json();
-      throw Error(body.stack);
+    if (response.status != 200) {
+      const error: string = await response.json();
+      throw Error(error);
     }
     const entity: T | undefined = await response.json();
     return entity;
   }
 
   async put(key: string, entity: T): Promise<void> {
-    const request = new Request(this.host + this.path, {
+    const request = new Request(this.origin + "/put", {
       method: "PUT",
       body: JSON.stringify({ key, entity }),
     });
@@ -58,14 +56,14 @@ export class Storage<
       this.path,
       request,
     );
-    if (response.status !== 200) {
-      const body: { stack: string } = await response.json();
-      throw Error(body.stack);
+    if (response.status != 200) {
+      const error: string = await response.json();
+      throw Error(error);
     }
   }
 }
 
-export class WorkerStorage implements DurableObject.Stub {
+export class WorkerStorage {
   private readonly state: DurableObject.State;
 
   constructor(state: DurableObject.State) {
@@ -73,43 +71,51 @@ export class WorkerStorage implements DurableObject.Stub {
   }
 
   fetch = fetcher({
-    "/*": {
-      GET: async ({ request }) => {
-        let body: { key: string | null };
+    "/list": {
+      GET: async () => {
+        try {
+          const map = await this.state.storage.list();
+          return Array.from(Object.values(map)) as EntityType[];
+        } catch (error) {
+          return { 500: error as string };
+        }
+      },
+    },
+
+    "/get": {
+      POST: async ({ request }) => {
+        let body: { key: string };
 
         try {
           body = await request.json();
         } catch (error) {
-          return { 400: error.stack };
+          return { 400: error as string };
         }
 
         try {
-          if (body.key) { // storage.get()
-            const entity = await this.state.storage.get(body.key);
-            return entity;
-          } else { // storage.list()
-            const map = await this.state.storage.list();
-            return Array.from(Object.values(map));
-          }
+          const entity = await this.state.storage.get(body.key);
+          return entity as EntityType ?? null;
         } catch (error) {
-          return { 500: error.stack };
+          return { 500: error as string };
         }
       },
+    },
 
+    "/put": {
       PUT: async ({ request }) => {
         let body: { key: string; entity: DurableObject.StorageValue };
 
         try {
           body = await request.json();
         } catch (error) {
-          return { 400: error.stack };
+          return { 400: error as string };
         }
 
         try {
           await this.state.storage.put(body.key, body.entity);
           return { 200: null };
         } catch (error) {
-          return { 500: error.stack };
+          return { 500: error as string };
         }
       },
     },

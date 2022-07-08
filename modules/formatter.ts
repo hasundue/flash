@@ -68,7 +68,7 @@ export class Formatter {
   format<S extends Status, R extends ResponseType>(
     precursor: ResponseLike<S, R>,
   ): Response {
-    const statusAndBody: { [P in S]: R } = precursor;
+    const statusAndBody: { [P in S]: R } = precursor as { [P in S]: R };
     const status = getKey(statusAndBody);
     const body = statusAndBody[status];
     const format = this.spec[status];

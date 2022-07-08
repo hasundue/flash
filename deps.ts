@@ -16,5 +16,3 @@ export {
   Status,
   STATUS_TEXT,
 } from "https://deno.land/std@0.144.0/http/http_status.ts";
-
-export * as lodash from "https://deno.land/x/lodash@4.17.19/lodash.js";

@@ -1,16 +1,15 @@
-import { fetcher, WorkerEnv } from "../mod.ts";
+import { fetch, WorkerEnv } from "../mod.ts";
 import { EntityType, Path } from "./router.ts";
 import * as DurableObject from "../modules/durable_object.ts";
 
 export class Storage<
-  P extends Path,
   T extends EntityType,
 > {
   private env: WorkerEnv;
   private host: string;
-  private path: P;
+  private path: Path;
 
-  constructor(env: WorkerEnv, host: string, path: P) {
+  constructor(env: WorkerEnv, host: string, path: Path) {
     this.env = env;
     this.host = host;
     this.path = path;
@@ -71,7 +70,7 @@ export class WorkerStorage implements DurableObject.Stub {
     this.state = state;
   }
 
-  fetch = fetcher({
+  fetch = fetch({
     "/": {
       GET: async ({ request }) => {
         let body: { key: string | null };
@@ -85,10 +84,10 @@ export class WorkerStorage implements DurableObject.Stub {
         try {
           if (body.key) { // storage.get()
             const entity = await this.state.storage.get(body.key);
-            return entity ?? null;
+            return entity as EntityType ?? null;
           } else { // storage.list()
             const map = await this.state.storage.list();
-            return Array.from(Object.values(map));
+            return Array.from(Object.values(map)) as EntityType[];
           }
         } catch (error) {
           return { 500: error.stack };
@@ -101,14 +100,14 @@ export class WorkerStorage implements DurableObject.Stub {
         try {
           body = await request.json();
         } catch (error) {
-          return { 400: error.stack };
+          return { 400: error.stack as string };
         }
 
         try {
           await this.state.storage.put(body.key, body.entity);
           return { 200: null };
         } catch (error) {
-          return { 500: error.stack };
+          return { 500: error.stack as string };
         }
       },
     },

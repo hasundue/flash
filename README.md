@@ -21,7 +21,7 @@ building REST APIs on serverless platforms with Deno.
   - [ ] Tree-structured router with a compile-time parser
   - [x] Polymorphism in resource implementation
   - [x] Syntax sugar for responses
-- [ ] :sun_behind_small_cloud: **Middlewares for Cloudflare Workers**
+- [x] :sun_behind_small_cloud: **Middlewares for Cloudflare Workers**
   - [x] Built-in key-value stores associated with each resource collection
   - [ ] Blocking communication among workers
 - [ ] :scroll: **Productivity**
@@ -55,7 +55,7 @@ $ denoflare push index.ts --name flash-demo
 ### Built-in key-value stores (Cloudflare Workers)
 
 You can access built-in key-value stores associated with each resource
-collection without setups.
+collection with zero configuration.
 
 ```typescript
 flare({

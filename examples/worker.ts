@@ -6,10 +6,12 @@ export default flare({
   "/": {
     GET: { 200: "Welcome to flash!" },
   },
+
   "/users": {
     GET: async ({ storage }) => {
       return await storage.list();
     },
+
     POST: async ({ request, storage }) => {
       let body: { name: string };
 
@@ -28,12 +30,14 @@ export default flare({
       return { 201: body };
     },
   },
+
   "/users/:name": {
     GET: async ({ params, storage }) => {
       const entity = await storage.get(params.name);
       return entity ?? { 404: params.name + " not found." };
     },
   },
+
   404: { message: "Requested URL or method is not available." },
 
   500: ({ error }: { error?: Error }) => ({

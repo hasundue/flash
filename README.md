@@ -12,27 +12,24 @@ building REST APIs on serverless platforms with Deno.
 - _Stay RESTful._
 - _You implement, we type._
 
-## Features / Roadmap
+## Roadmap
 
 - [ ] :rocket: **Multi Platform**
-  - [x] Cloudflare Workers
+  - [x] Cloudflare Workers ([Denoflare](https://denoflare.dev))
   - [ ] Deno Deploy
 - [x] :magic_wand: **Progressive APIs**
+  - [ ] Tree-structured router with a compile-time parser
   - [x] Polymorphism in resource implementation
   - [x] Syntax sugar for responses
-  - [ ] Tree-structured routers
-  - [ ] Strong type inference
 - [ ] :sun_behind_small_cloud: **Middlewares for Cloudflare Workers**
-  - [x] Built-in object storage associated with each resource collection
+  - [x] Built-in key-value stores associated with each resource collection
   - [ ] Blocking communication among workers
-- [ ] :scroll: **Code/Doc Generation**
-  - [ ] Universal Typescript SDK for clients
-  - [ ] OpenAPI specs
-  - [ ] Seamless hosting of API documents
+- [ ] :scroll: **Productivity**
+  - [ ] Generate OpenAPI specs from implementation
+  - [ ] Host documents seamlessly
 - [ ] :gear: **Advanced functionalities**
   - [ ] Multipart support
   - [ ] GraphQL server
-- [ ] :sparkles: **Zero third-party dependencies**
 
 ## Usage
 
@@ -47,10 +44,33 @@ import { flare } from "https://deno.land/x/flash/mod.ts";
 export default flare({ "/": "Welcome to flash!" });
 ```
 
-And deploy with [Denoflare](https://denoflare.dev/)!
+And deploy with Denoflare!
 
 ```sh
 $ denoflare push index.ts --name flash-demo
+```
+
+## Key Features
+
+### Built-in key-value stores (Cloudflare Workers)
+
+You can access built-in key-value stores associated with each resource
+collection without setups.
+
+```typescript
+flare({
+  "/users": {
+    GET: async ({ storage }) => {
+      return await storage.list();
+    },
+  },
+  "/users/:name": {
+    PUT: async ({ request, params, storage }) => {
+      await storage.put(params.name, await request.json());
+      return { 201: params.name };
+    },
+  },
+}
 ```
 
 ## Examples
@@ -149,27 +169,6 @@ flare({
     400: { message: false },
   },
 });
-```
-
-### Object Storage (Cloudflare Workers)
-
-Built-in object storage associated with each resource collection, implemented
-with Durable Objects.
-
-```typescript
-flare({
-  "/users": {
-    GET: async ({ storage }) => {
-      return await storage.list();
-    },
-  },
-  "/users/:name": {
-    PUT: async ({ request, params, storage }) => {
-      await storage.put(params.name, await request.json());
-      return { 201: params.name };
-    },
-  },
-}
 ```
 
 ## Acknowledgment

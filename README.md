@@ -1,5 +1,8 @@
 # flash
 
+![CI](https://github.com/hasundue/flash/actions/workflows/test.yml/badge.svg)
+[![codecov](https://codecov.io/gh/hasundue/flash/branch/main/graph/badge.svg?token=DRMQQ7ICNB)](https://codecov.io/gh/hasundue/flash)
+
 Flash is a resource-oriented web framework in TypeScript, particularly optimized
 for building RESTful APIs on serverless platforms with Deno.
 

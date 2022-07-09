@@ -1,8 +1,4 @@
-import { readLines } from "https://deno.land/std@0.144.0/io/mod.ts";
-import {
-  assertEquals,
-  assertObjectMatch,
-} from "https://deno.land/std@0.144.0/testing/asserts.ts";
+import { assertEquals, assertObjectMatch, readLines } from "../deps_dev.ts";
 
 async function startServer(file: string, ...options: string[]) {
   const proc = Deno.run({

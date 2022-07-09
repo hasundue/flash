@@ -5,7 +5,7 @@ export type {
   DurableObjectStub,
   IncomingRequestCf as WorkerRequest,
   ModuleWorkerContext as WorkerContext,
-} from "https://pax.deno.dev/skymethod/denoflare@v0.5.2/common/cloudflare_workers_types.d.ts";
+} from "https://denopkg.com/skymethod/denoflare@v0.5.2/common/cloudflare_workers_types.d.ts#^";
 
 export type {
   ErrorStatus,

@@ -1,4 +1,4 @@
-import { assertEquals } from "https://deno.land/std@0.144.0/testing/asserts.ts";
+import { assertEquals } from "../deps_dev.ts";
 import { getStoragePath, parentOf } from "./router.ts";
 
 Deno.test('parentOf("/")', () => {

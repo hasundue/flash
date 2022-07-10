@@ -19,15 +19,15 @@ export type ErrorKey = 404 | 500;
 
 export type Routes<
   C extends Context,
-  Ks extends RouteKey,
+  Ks extends keyof R,
   R extends { [K in Ks]: Route<C, K> },
 > = {
   [K in Ks]: R[K];
 };
 
-export type Route<C extends Context, K extends RouteKey> = Resource<
+export type Route<C extends Context, K> = Resource<
   C,
-  K,
+  K & RouteKey,
   SuccessStatus,
   EntityType
 >;
@@ -36,7 +36,7 @@ export type Route<C extends Context, K extends RouteKey> = Resource<
 
 export class Router<
   C extends Context,
-  Ks extends RouteKey,
+  Ks extends keyof R,
   R extends { [K in Ks]: Route<C, K> },
   Ps extends Ks & Path,
 > implements RouterMethods<C> {
@@ -58,7 +58,7 @@ export class Router<
     const { origin, pathname, search } = new URL(request.url);
     const path = pathname as Path;
     // const routes = getKeys(this.routes).filter(this.isPath);
-    const routes = getKeys(this.routes) as Ks[];
+    const routes = getKeys(this.routes) as Ps[];
 
     for (const route of routes) {
       const pattern = new URLPattern({ pathname: route });

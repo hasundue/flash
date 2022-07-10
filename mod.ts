@@ -87,7 +87,7 @@ export interface RouterMethods<C extends Context> {
 
 export function RestAPI<
   C extends Context,
-  Ks extends RouteKey,
+  Ks extends keyof R,
   R extends { [K in Ks]: Route<C, K> },
 >(
   routes: Routes<C, Ks, R>,
@@ -101,7 +101,7 @@ export function RestAPI<
 }
 
 export function flare<
-  Ks extends RouteKey,
+  Ks extends keyof R,
   R extends { [K in Ks]: Route<Worker, K> },
 >(
   routes: Routes<Worker, Ks, R>,

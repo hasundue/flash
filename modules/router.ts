@@ -254,6 +254,11 @@ type Parent<P extends Path> = ParentDir<P> extends `${infer S extends Path}/`
   ? S
   : never;
 
+export type Base<P extends Path> = P extends
+  `${Parent<P>}/${infer S extends string}` ? S
+  : P extends `/${infer S extends string}` ? S
+  : never;
+
 type ParentDir<P extends string> = P extends `${infer Head}/${infer Tail}`
   ? `${Head}/${ParentDir<Tail>}`
   : "";

@@ -1,5 +1,5 @@
 import { assertEquals } from "../deps_dev.ts";
-import { getStoragePath, parentOf } from "./router.ts";
+import { Base, getStoragePath, parentOf } from "./router.ts";
 
 Deno.test('parentOf("/")', () => {
   assertEquals(
@@ -35,3 +35,6 @@ Deno.test('getStoragePath<"/users/:name", "/users">("/users/:name")', () => {
     "/users",
   );
 });
+
+const base1: Base<"/users"> = "users";
+const base2: Base<"/users/:name"> = ":name";

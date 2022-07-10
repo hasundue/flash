@@ -30,7 +30,7 @@ jobs:
         run: deno lint
 
       - name: Test
-        run: deno task test --coverage=coverage
+        run: deno task test --coverage=coverage modules/ integration/
 
       - name: Create coverage report
         run: deno coverage ./coverage --lcov > coverage.lcov

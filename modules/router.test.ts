@@ -36,5 +36,8 @@ Deno.test('getStoragePath<"/users/:name", "/users">("/users/:name")', () => {
   );
 });
 
+// deno-lint-ignore no-unused-vars
 const base1: Base<"/users"> = "users";
+
+// deno-lint-ignore no-unused-vars
 const base2: Base<"/users/:name"> = ":name";

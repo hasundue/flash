@@ -14,28 +14,36 @@ import { Storage } from "./storage.ts";
 
 class NotFound extends Error {}
 
-export type RouteKey = Path | 404 | 500 | "format";
+export type RouteKey = Path; //| 404 | 500 | "format";
+export type ErrorKey = 404 | 500;
 
-// deno-fmt-ignore
-export type Routes<C extends Context, Ks extends RouteKey> =
-  {
-    // TODO: infer specific types of Status, EntityType, and ErrorType
-    [K in Ks]: K extends Path
-      ? Resource<C, K, SuccessStatus, EntityType>
-      : K extends 404 | 500
-        ? ErrorImpl<C, Path, K, ErrorType>
-        : FormatterInit;
-  }
+export type Routes<
+  C extends Context,
+  Ks extends RouteKey,
+  R extends { [K in Ks]: Route<C, K> },
+> = {
+  [K in Ks]: R[K];
+};
+
+export type Route<C extends Context, K extends RouteKey> = Resource<
+  C,
+  K,
+  SuccessStatus,
+  EntityType
+>;
+// | ErrorImpl<Context, Path, ErrorKey, ErrorType>
+// | FormatterInit;
 
 export class Router<
   C extends Context,
   Ks extends RouteKey,
+  R extends { [K in Ks]: Route<C, K> },
   Ps extends Ks & Path,
 > implements RouterMethods<C> {
-  private routes: Routes<C, Ks>;
+  private routes: Routes<C, Ks, R>;
   private formatter?: FormatterInit;
 
-  constructor(routes: Routes<C, Ks>) {
+  constructor(routes: Routes<C, Ks, R>) {
     this.routes = routes;
 
     // @ts-ignore we accept routes.format to be undefined
@@ -44,16 +52,13 @@ export class Router<
     this.formatter = format;
   }
 
-  route<
-    P extends Ps,
-    S extends SuccessStatus,
-    T extends EntityType,
-  >(request: Request): Handler<C> {
+  route(request: Request): Handler<C> {
     const startTime = Date.now();
 
     const { origin, pathname, search } = new URL(request.url);
     const path = pathname as Path;
-    const routes = getKeys(this.routes).filter(this.isPath);
+    // const routes = getKeys(this.routes).filter(this.isPath);
+    const routes = getKeys(this.routes) as Ks[];
 
     for (const route of routes) {
       const pattern = new URLPattern({ pathname: route });
@@ -62,7 +67,7 @@ export class Router<
         const params = pattern.exec({ pathname })?.pathname
           .groups as PathParams<Ps>;
 
-        const resource = this.routes[route] as Resource<C, P, S, T>;
+        const resource = this.routes[route];
 
         if (this.isMethodRoutes(resource)) {
           if (!isMethod(request.method)) continue;
@@ -70,12 +75,10 @@ export class Router<
           const impl = resource[request.method];
 
           if (impl !== undefined) {
-            // @ts-ignore TODO: fix PathParams
-            return this.evaluateRouteImpl(impl, origin, path as P, params);
+            return this.evaluateRouteImpl(impl, origin, path as Ps, params);
           }
         } else {
-          // @ts-ignore TODO: fix PathParams
-          return this.evaluateRouteImpl(resource, origin, path as P, params);
+          return this.evaluateRouteImpl(resource, origin, path as Ps, params);
         }
       }
     }
@@ -248,7 +251,7 @@ function getResponseLike<
   return getObject([[status, value]]) as ResponseLike<S, R>;
 }
 
-export type Path = `/${string}` | "*";
+export type Path = `/${string}`;
 
 type Parent<P extends Path> = ParentDir<P> extends `${infer S extends Path}/`
   ? S
@@ -347,7 +350,7 @@ type MethodRoutes<
   P extends Path,
   S extends SuccessStatus,
   T extends EntityType,
-  R extends ResourceType,
+  R extends T | T[],
 > =
   & {
     GET?: ResourceImpl<C, P, S, T, R>;
@@ -367,7 +370,7 @@ type ResourceImpl<
   P extends Path,
   S extends SuccessStatus,
   T extends EntityType,
-  R extends ResourceType,
+  R extends T | T[],
 > =
   | ResourceHandler<C, P, S, T, R>
   | ResponseLike<S, R>
@@ -399,7 +402,7 @@ type ResourceHandler<
   P extends Path,
   S extends SuccessStatus,
   T extends EntityType,
-  R extends ResourceType,
+  R extends T | T[],
 > = (
   args: HandlerArgs<C> & {
     path: P;

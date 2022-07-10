@@ -28,7 +28,6 @@ export type Routes<
 export type Route<C extends Context, K> = Resource<
   C,
   K & RouteKey,
-  SuccessStatus,
   EntityType
 >;
 // | ErrorImpl<Context, Path, ErrorKey, ErrorType>
@@ -67,7 +66,7 @@ export class Router<
         const params = pattern.exec({ pathname })?.pathname
           .groups as PathParams<Ps>;
 
-        const resource = this.routes[route];
+        const resource = this.routes[route] as Route<C, Ps>;
 
         if (this.isMethodRoutes(resource)) {
           if (!isMethod(request.method)) continue;
@@ -116,13 +115,12 @@ export class Router<
 
   private evaluateRouteImpl<
     P extends Ps,
-    S extends SuccessStatus,
     T extends EntityType,
   >(
     impl:
-      | ResourceImpl<C, P, S, T, T>
-      | ResourceImpl<C, P, S, T, T[]>
-      | OperationImpl<C, P, S, T, ResultType>,
+      | ResourceImpl<C, P, T, T>
+      | ResourceImpl<C, P, T, T[]>
+      | OperationImpl<C, P, T, ResultType>,
     origin: string,
     path: P,
     params: PathParams<P>,
@@ -205,28 +203,26 @@ export class Router<
 
   private isMethodRoutes<
     P extends Ps,
-    S extends SuccessStatus,
     T extends EntityType,
   >(
-    resource: Resource<C, P, S, T>,
-  ): resource is MethodRoutes<C, P, S, T, T> | MethodRoutes<C, P, S, T, T[]> {
+    resource: Resource<C, P, T>,
+  ): resource is MethodRoutes<C, P, T, T> | MethodRoutes<C, P, T, T[]> {
     return typeof resource === "object" && resource !== null &&
       Object.keys(resource).every(isMethod);
   }
 
   private isRouteHandler<
     P extends Path,
-    S extends SuccessStatus,
     T extends EntityType,
   >(
     impl:
-      | ResourceImpl<C, P, S, T, T>
-      | ResourceImpl<C, P, S, T, T[]>
-      | OperationImpl<C, P, S, T, ResultType>,
+      | ResourceImpl<C, P, T, T>
+      | ResourceImpl<C, P, T, T[]>
+      | OperationImpl<C, P, T, ResultType>,
   ): impl is
-    | ResourceHandler<C, P, S, T, T>
-    | ResourceHandler<C, P, S, T, T[]>
-    | OperationHandler<C, P, S, T, ResultType> {
+    | ResourceHandler<C, P, T, T>
+    | ResourceHandler<C, P, T, T[]>
+    | OperationHandler<C, P, T, ResultType> {
     return typeof impl === "function";
   }
 
@@ -319,47 +315,42 @@ function isMethod(str: string): str is Method {
 type Resource<
   C extends Context,
   P extends Path,
-  S extends SuccessStatus,
   T extends EntityType,
 > =
-  | Collection<C, P, S, T>
-  | Entity<C, P, S, T>;
+  | Collection<C, P, T>
+  | Entity<C, P, T>;
 
 type Collection<
   C extends Context,
   P extends Path,
-  S extends SuccessStatus,
   T extends EntityType,
 > =
-  | MethodRoutes<C, P, S, T, T[]>
+  | MethodRoutes<C, P, T, T[]>
   // & Routes<C>
-  | ResourceImpl<C, P, S, T, T[]>;
+  | ResourceImpl<C, P, T, T[]>;
 
 type Entity<
   C extends Context,
   P extends Path,
-  S extends SuccessStatus,
   T extends EntityType,
 > =
-  | MethodRoutes<C, P, S, T, T>
+  | MethodRoutes<C, P, T, T>
   // & Routes<C>
-  | ResourceImpl<C, P, S, T, T>;
+  | ResourceImpl<C, P, T, T>;
 
 type MethodRoutes<
   C extends Context,
   P extends Path,
-  S extends SuccessStatus,
   T extends EntityType,
   R extends T | T[],
 > =
   & {
-    GET?: ResourceImpl<C, P, S, T, R>;
+    GET?: ResourceImpl<C, P, T, R>;
   }
   & {
     [M in Exclude<Method, "GET">]?: OperationImpl<
       C,
       P,
-      S,
       T,
       ResultType
     >;
@@ -368,23 +359,21 @@ type MethodRoutes<
 type ResourceImpl<
   C extends Context,
   P extends Path,
-  S extends SuccessStatus,
   T extends EntityType,
   R extends T | T[],
 > =
-  | ResourceHandler<C, P, S, T, R>
-  | ResponseLike<S, R>
+  | ResourceHandler<C, P, T, R>
+  | ResponseLike<SuccessStatus, R>
   | R;
 
 type OperationImpl<
   C extends Context,
   P extends Path,
-  S extends SuccessStatus,
   T extends EntityType,
   R extends ResultType,
 > =
-  | OperationHandler<C, P, S, T, R>
-  | ResponseLike<S, R>
+  | OperationHandler<C, P, T, R>
+  | ResponseLike<SuccessStatus, R>
   | R;
 
 type ErrorImpl<
@@ -400,7 +389,6 @@ type ErrorImpl<
 type ResourceHandler<
   C extends Context,
   P extends Path,
-  S extends SuccessStatus,
   T extends EntityType,
   R extends T | T[],
 > = (
@@ -410,13 +398,12 @@ type ResourceHandler<
     storage: Storage<T>;
   },
 ) =>
-  | RouteReturnType<S, R>
+  | RouteReturnType<SuccessStatus, R>
   | RouteReturnType<ErrorStatus, ErrorType>;
 
 type OperationHandler<
   C extends Context,
   P extends Path,
-  S extends SuccessStatus,
   T extends EntityType,
   R extends ResultType,
 > = (
@@ -426,7 +413,7 @@ type OperationHandler<
     storage: Storage<T>;
   },
 ) =>
-  | RouteReturnType<S, R>
+  | RouteReturnType<SuccessStatus, R>
   | RouteReturnType<ErrorStatus, ErrorType>;
 
 type RouteReturnType<S extends Status, R extends ResponseType> =

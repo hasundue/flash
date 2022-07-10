@@ -1,10 +1,16 @@
 import type { WorkerContext, WorkerRequest } from "./deps.ts";
 
-import { Path, Route, RouteKey, Router, Routes } from "./modules/router.ts";
+import {
+  EntityType,
+  Route,
+  RouteKey,
+  Router,
+  Routes,
+} from "./modules/router.ts";
 import { Namespace as DurableObjectNamespace } from "./modules/durable_object.ts";
 
 export type { Routes } from "./modules/router.ts";
-export { WorkerStorage } from "./modules/storage.ts";
+export { Storage, WorkerStorage } from "./modules/storage.ts";
 
 export interface WorkerEnv {
   storage: DurableObjectNamespace;

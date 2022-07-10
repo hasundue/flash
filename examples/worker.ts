@@ -24,7 +24,7 @@ export default flare({
       try {
         await storage.put(body.name, body);
       } catch (error) {
-        return { 500: error as string };
+        return { 500: error as Error };
       }
 
       return { 201: body };

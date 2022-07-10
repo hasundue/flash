@@ -39,8 +39,8 @@ export class Storage<
       request,
     );
     if (response.status != 200) {
-      const error: string = await response.json();
-      throw Error(error);
+      const error: Error = await response.json();
+      throw error;
     }
     const entity: T | undefined = await response.json();
     return entity;
@@ -57,8 +57,8 @@ export class Storage<
       request,
     );
     if (response.status != 200) {
-      const error: string = await response.json();
-      throw Error(error);
+      const error: Error = await response.json();
+      throw error;
     }
   }
 }
@@ -77,7 +77,7 @@ export class WorkerStorage {
           const map = await this.state.storage.list();
           return Array.from(Object.values(map)) as EntityType[];
         } catch (error) {
-          return { 500: error as string };
+          return { 500: error as Error };
         }
       },
     },
@@ -89,14 +89,14 @@ export class WorkerStorage {
         try {
           body = await request.json();
         } catch (error) {
-          return { 400: error as string };
+          return { 400: error as Error };
         }
 
         try {
           const entity = await this.state.storage.get(body.key);
           return entity as EntityType ?? null;
         } catch (error) {
-          return { 500: error as string };
+          return { 500: error as Error };
         }
       },
     },
@@ -108,14 +108,14 @@ export class WorkerStorage {
         try {
           body = await request.json();
         } catch (error) {
-          return { 400: error as string };
+          return { 400: error as Error };
         }
 
         try {
           await this.state.storage.put(body.key, body.entity);
           return { 200: null };
         } catch (error) {
-          return { 500: error as string };
+          return { 500: error as Error };
         }
       },
     },

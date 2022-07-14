@@ -10,9 +10,9 @@ export type {
 export type {
   ErrorStatus,
   SuccessfulStatus as SuccessStatus,
-} from "https://deno.land/std@0.147.0/http/http_status.ts";
+} from "https://deno.land/std@0.148.0/http/http_status.ts";
 
 export {
   Status,
   STATUS_TEXT,
-} from "https://deno.land/std@0.147.0/http/http_status.ts";
+} from "https://deno.land/std@0.148.0/http/http_status.ts";

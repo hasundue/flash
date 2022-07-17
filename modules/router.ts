@@ -14,7 +14,7 @@ import { Storage } from "./storage.ts";
 
 class NotFound extends Error {}
 
-export type RouteKey = Path; //| 404 | 500 | "format";
+export type RouteKey = Path | ErrorKey | "format";
 export type ErrorKey = 404 | 500;
 
 export type Routes<
@@ -25,13 +25,10 @@ export type Routes<
   [K in Ks]: R[K];
 };
 
-export type Route<C extends Context, K> = Resource<
-  C,
-  K & RouteKey,
-  EntityType
->;
-// | ErrorImpl<Context, Path, ErrorKey, ErrorType>
-// | FormatterInit;
+export type Route<C extends Context, K> = K extends Path
+  ? Resource<C, K, EntityType>
+  : K extends ErrorKey ? ErrorImpl<C, Path, K, ErrorType>
+  : FormatterInit;
 
 export class Router<
   C extends Context,
@@ -56,8 +53,7 @@ export class Router<
 
     const { origin, pathname, search } = new URL(request.url);
     const path = pathname as Path;
-    // const routes = getKeys(this.routes).filter(this.isPath);
-    const routes = getKeys(this.routes) as Ps[];
+    const routes = getKeys(this.routes).filter(this.isPath);
 
     for (const route of routes) {
       const pattern = new URLPattern({ pathname: route });
@@ -66,7 +62,7 @@ export class Router<
         const params = pattern.exec({ pathname })?.pathname
           .groups as PathParams<Ps>;
 
-        const resource = this.routes[route] as Route<C, Ps>;
+        const resource = this.routes[route];
 
         if (this.isMethodRoutes(resource)) {
           if (!isMethod(request.method)) continue;
@@ -114,7 +110,7 @@ export class Router<
   }
 
   private evaluateRouteImpl<
-    P extends Ps,
+    P extends Path,
     T extends EntityType,
   >(
     impl:
@@ -202,7 +198,7 @@ export class Router<
   }
 
   private isMethodRoutes<
-    P extends Ps,
+    P extends Path,
     T extends EntityType,
   >(
     resource: Resource<C, P, T>,
@@ -398,7 +394,8 @@ type ResourceHandler<
     storage: Storage<T>;
   },
 ) =>
-  | RouteReturnType<SuccessStatus, R>
+  | (R extends T ? RouteReturnType<SuccessStatus, T>
+    : RouteReturnType<SuccessStatus, T[]>)
   | RouteReturnType<ErrorStatus, ErrorType>;
 
 type OperationHandler<
@@ -451,7 +448,8 @@ type ErrorType =
 type ResultType =
   | Record<string, unknown>
   | string
-  | null;
+  | null
+  | void;
 
 export type ResponseType = ErrorType | ResourceType | ResultType;
 

@@ -37,8 +37,7 @@ export default flare({
       return entity ?? { 404: params.name + " not found." };
     },
   },
-  // 404: { message: "Requested URL or method is not available." },
-
+  404: { message: "Requested URL or method is not available." },
   // 500: ({ error }: { error?: Error }) => ({
   //   message: "Unexpected error.",
   //   stack: error?.stack,

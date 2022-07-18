@@ -1,10 +1,10 @@
 import type { WorkerContext, WorkerRequest } from "./deps.ts";
 
-import { RouteKey, Router, Routes } from "./modules/router.ts";
+import { Route, RouteKey, Router, Routes } from "./modules/router.ts";
 import { Namespace as DurableObjectNamespace } from "./modules/durable_object.ts";
 
 export type { Routes } from "./modules/router.ts";
-export { WorkerStorage } from "./modules/storage.ts";
+export { Storage, WorkerStorage } from "./modules/storage.ts";
 
 export interface WorkerEnv {
   storage: DurableObjectNamespace;
@@ -87,9 +87,10 @@ export interface RouterMethods<C extends Context> {
 
 export function RestAPI<
   C extends Context,
-  Ks extends RouteKey,
+  Ks extends keyof R,
+  R extends { [K in Ks]: Route<C, K> },
 >(
-  routes: Routes<C, Ks>,
+  routes: Routes<C, Ks, R>,
 ): Handler<C> {
   const router = new Router(routes);
 
@@ -99,16 +100,22 @@ export function RestAPI<
   };
 }
 
-export function flare<Ks extends RouteKey>(
-  routes: Routes<Worker, Ks>,
+export function flare<
+  Ks extends keyof R,
+  R extends { [K in Ks]: Route<Worker, K> },
+>(
+  routes: Routes<Worker, Ks, R>,
 ) {
   return {
     fetch: RestAPI(routes),
   };
 }
 
-export function fetcher<Ks extends RouteKey>(
-  routes: Routes<DurableObject, Ks>,
+export function fetcher<
+  Ks extends RouteKey,
+  R extends { [K in Ks]: Route<DurableObject, K> },
+>(
+  routes: Routes<DurableObject, Ks, R>,
 ) {
   return RestAPI(routes);
 }

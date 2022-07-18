@@ -1,12 +1,6 @@
 import type { WorkerContext, WorkerRequest } from "./deps.ts";
 
-import {
-  EntityType,
-  Route,
-  RouteKey,
-  Router,
-  Routes,
-} from "./modules/router.ts";
+import { Route, RouteKey, Router, Routes } from "./modules/router.ts";
 import { Namespace as DurableObjectNamespace } from "./modules/durable_object.ts";
 
 export type { Routes } from "./modules/router.ts";
@@ -117,8 +111,11 @@ export function flare<
   };
 }
 
-export function fetcher<Ks extends RouteKey>(
-  routes: Routes<DurableObject, Ks>,
+export function fetcher<
+  Ks extends RouteKey,
+  R extends { [K in Ks]: Route<DurableObject, K> },
+>(
+  routes: Routes<DurableObject, Ks, R>,
 ) {
   return RestAPI(routes);
 }

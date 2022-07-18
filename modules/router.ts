@@ -70,10 +70,10 @@ export class Router<
           const impl = resource[request.method];
 
           if (impl !== undefined) {
-            return this.evaluateRouteImpl(impl, origin, path as Ps, params);
+            return this.evaluateRouteImpl(impl, origin, path, params);
           }
         } else {
-          return this.evaluateRouteImpl(resource, origin, path as Ps, params);
+          return this.evaluateRouteImpl(resource, origin, path, params);
         }
       }
     }
@@ -136,9 +136,8 @@ export class Router<
 
         try {
           const value = await impl({ ...record, storage, path, params });
-          return isResponseLike(value)
-            ? this.formatResponseLike(value)
-            : this.formatResponseLike(getResponseLike(200, value));
+          return isResponseLike(value) ? this.formatResponseLike(value) : // @ts-ignore this should be safe since getResponseLike does nothing on the contents of value
+            this.formatResponseLike(getResponseLike(200, value));
         } catch (error) {
           if (error instanceof Error && maybeErrorImpl !== undefined) {
             const handler = this.evaluateErrorImpl(
@@ -240,7 +239,7 @@ function getResponseLike<
   status: S,
   value: R,
 ): ResponseLike<S, R> {
-  return getObject([[status, value]]) as ResponseLike<S, R>;
+  return getObject([[status, value]]);
 }
 
 export type Path = `/${string}`;
@@ -394,8 +393,7 @@ type ResourceHandler<
     storage: Storage<T>;
   },
 ) =>
-  | (R extends T ? RouteReturnType<SuccessStatus, T>
-    : RouteReturnType<SuccessStatus, T[]>)
+  | RouteReturnType<SuccessStatus, R>
   | RouteReturnType<ErrorStatus, ErrorType>;
 
 type OperationHandler<
@@ -438,7 +436,7 @@ export type EntityType =
   | Primitive
   | Primitive[];
 
-export type ResourceType = EntityType | EntityType[];
+type ResourceType = EntityType | EntityType[];
 
 type ErrorType =
   | Record<string, unknown>

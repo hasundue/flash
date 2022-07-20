@@ -5,14 +5,14 @@ export type {
   DurableObjectStub,
   IncomingRequestCf as WorkerRequest,
   ModuleWorkerContext as WorkerContext,
-} from "https://denopkg.com/skymethod/denoflare@v0.5.3/common/cloudflare_workers_types.d.ts#^";
+} from "https://denopkg.com/skymethod/denoflare@v0.5.4/common/cloudflare_workers_types.d.ts#^";
 
 export type {
   ErrorStatus,
   SuccessfulStatus as SuccessStatus,
-} from "https://deno.land/std@0.148.0/http/http_status.ts";
+} from "https://deno.land/std@0.149.0/http/http_status.ts";
 
 export {
   Status,
   STATUS_TEXT,
-} from "https://deno.land/std@0.148.0/http/http_status.ts";
+} from "https://deno.land/std@0.149.0/http/http_status.ts";

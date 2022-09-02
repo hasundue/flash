@@ -48,7 +48,7 @@ jobs:
         if: ${{ steps.release.conclusion == 'success' && env.account_id != '' && env.api_token != '' }} 
         run: >
           deno install --unstable --allow-read --allow-net --allow-env --allow-run --name denoflare --force 
-          https://raw.githubusercontent.com/skymethod/denoflare/v0.5.2/cli/cli.ts
+          https://pax.deno.dev/skymethod/denoflare/cli/cli.ts
 
       - name: Deploy Demo
         if: ${{ steps.denoflare.conclusion == 'success' }}

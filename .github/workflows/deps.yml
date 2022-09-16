@@ -54,7 +54,9 @@ jobs:
         run: deno install -A https://deno.land/x/udd/main.ts --name udd
 
       - name: Update dependencies
-        run: udd deps_dev.ts | xargs -I {result} echo "UDD_RESULT={result}" >> $GITHUB_ENV
+        run: |
+          udd deps_dev.ts .github/workflows/test.yml |
+          xargs -I {result} echo "UDD_RESULT={result}" >> $GITHUB_ENV
 
       - name: Create a pull request
         uses: peter-evans/create-pull-request@v3

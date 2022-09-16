@@ -1,8 +1,7 @@
 name: test
 
 on:
-  pull_request:
-    branches: [ main ]
+  pull_request_target:
   workflow_call:
 
 jobs:
@@ -20,8 +19,8 @@ jobs:
 
       - name: Install Denoflare
         run: >
-          deno install --unstable --allow-all --name denoflare --force 
-          https://raw.githubusercontent.com/skymethod/denoflare/v0.5.2/cli/cli.ts
+          deno install -A --unstable --name denoflare --force 
+          https://raw.githubusercontent.com/skymethod/denoflare/v0.5.8/cli/cli.ts
 
       - name: Format
         run: deno fmt --check

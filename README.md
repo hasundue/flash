@@ -4,21 +4,17 @@
 [![codecov](https://codecov.io/gh/hasundue/flash/branch/main/graph/badge.svg?token=DRMQQ7ICNB)](https://codecov.io/gh/hasundue/flash)
 
 Flash is a resource-oriented web framework in TypeScript, particularly optimized
-for building RESTful APIs on serverless platforms with Deno.
+for building microservices on serverless platforms with Deno.
 
 > **Warning**\
-> Flash is still an alpha version. Do not use it for production use yet, unless
-> you are a contributor to the framework.
-
-## Concepts
-
-- _Stay RESTful._
-- _You implement, we type._
+> Flash is still an alpha version. Do not use it for any practical use yet,
+> unless you are a contributor to the framework.
 
 ## Roadmap
 
 - [ ] :rocket: **Multi Platform**
   - [x] Cloudflare Workers ([Denoflare](https://denoflare.dev))
+  - [ ] Supabase
   - [ ] Deno Deploy
 - [x] :magic_wand: **Progressive APIs**
   - [ ] Tree-structured router with a compile-time parser
@@ -27,12 +23,6 @@ for building RESTful APIs on serverless platforms with Deno.
 - [x] :sun_behind_small_cloud: **Middlewares for Cloudflare Workers**
   - [x] Built-in key-value stores associated with each resource collection
   - [ ] Blocking communication among workers
-- [ ] :scroll: **Productivity**
-  - [ ] Generate OpenAPI specs from implementation
-  - [ ] Host documents seamlessly
-- [ ] :gear: **Advanced functionalities**
-  - [ ] Multipart support
-  - [ ] GraphQL server
 
 ## Usage
 

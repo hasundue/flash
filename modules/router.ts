@@ -136,8 +136,9 @@ export class Router<
 
         try {
           const value = await impl({ ...record, storage, path, params });
-          return isResponseLike(value) ? this.formatResponseLike(value) : // @ts-ignore this should be safe since getResponseLike does nothing on the contents of value
-            this.formatResponseLike(getResponseLike(200, value));
+          return isResponseLike(value)
+            ? this.formatResponseLike(value) // @ts-ignore this should be safe since getResponseLike does nothing on the contents of value
+            : this.formatResponseLike(getResponseLike(200, value));
         } catch (error) {
           if (error instanceof Error && maybeErrorImpl !== undefined) {
             const handler = this.evaluateErrorImpl(

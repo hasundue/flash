@@ -1,25 +1,37 @@
 export type Resource<
   R extends {
-    spec: Record<string, unknown>;
-    data?: Record<string, unknown>;
+    keys: Record<string, unknown>;
+    body?: unknown;
     meta?: Record<string, unknown>;
     query?: Record<string, unknown>;
   },
 > = (args: {
-  storage: ResourceStorage<R["spec"], R["data"] & R["meta"]>;
+  storage: ResourceStorage<R["keys"], R["body"], R["meta"]>;
 }) => {
-  get?: (spec: R["spec"]) => Promise<R["spec"] & R["data"] & R["meta"]>;
-  put?: (init: R["spec"] & R["data"]) => Promise<R["meta"]>;
-  list?: (query: R["query"]) => Promise<(R["spec"] & R["data"] & R["meta"])[]>;
-  create?: (spec: R["spec"]) => Promise<R["spec"] & R["data"] & R["meta"]>;
+  list?: (query: R["query"]) => Promise<(R["keys"] & R["body"] & R["meta"])[]>;
+  get?: (spec: R["keys"]) => Promise<R["keys"] & R["body"] & R["meta"]>;
+  put?: (
+    spec: R["keys"],
+    body: R["body"],
+  ) => Promise<R["keys"] & R["body"] & R["meta"]>;
+  update?: (spec: R["keys"], body: Partial<R["body"]>) => Promise<R["meta"]>;
 };
 
-interface ResourceStorage<Spec, Type> {
-  get: (spec: Spec) => Promise<Spec & Type>;
-  put: (spec: Spec & Type) => Promise<void>;
+interface ResourceStorage<Spec, Body, Meta> {
   list: (
     query: Partial<
-      { [K in keyof (Spec & Type)]: (it: (Spec & Type)[K]) => boolean }
+      {
+        [K in keyof (Spec & Body & Meta)]: (
+          it: (Spec & Body & Meta)[K],
+        ) => boolean;
+      }
     >,
-  ) => Promise<(Spec & Type)[]>;
+  ) => Promise<(Spec & Body & Meta)[]>;
+  get: (spec: Spec) => Promise<Spec & Body & Meta>;
+  put: (resc: Spec, body: Body, meta: Meta) => Promise<void>;
+  update: (
+    spec: Spec,
+    body: Partial<Body>,
+    meta?: Partial<Meta>,
+  ) => Promise<void>;
 }

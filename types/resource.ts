@@ -1,23 +1,17 @@
-export type RestApiSpecs = RestApiObject;
-
-type RestApiObject = Record<string, Resource<any>>;
-
-type ResourceSpec = {
-  spec: Record<string, unknown>;
-  data?: Record<string, unknown>;
-  meta?: Record<string, unknown>;
-  query?: Record<string, unknown>;
-};
-
 export type Resource<
-  S extends ResourceSpec,
+  R extends {
+    spec: Record<string, unknown>;
+    data?: Record<string, unknown>;
+    meta?: Record<string, unknown>;
+    query?: Record<string, unknown>;
+  },
 > = (args: {
-  storage: ResourceStorage<S["spec"], S["data"] & S["meta"]>;
+  storage: ResourceStorage<R["spec"], R["data"] & R["meta"]>;
 }) => {
-  get?: (spec: S["spec"]) => Promise<S["spec"] & S["data"] & S["meta"]>;
-  put?: (init: S["spec"] & S["data"]) => Promise<S["meta"]>;
-  list?: (query: S["query"]) => Promise<(S["spec"] & S["data"] & S["meta"])[]>;
-  create?: (spec: S["spec"]) => Promise<S["spec"] & S["data"] & S["meta"]>;
+  get?: (spec: R["spec"]) => Promise<R["spec"] & R["data"] & R["meta"]>;
+  put?: (init: R["spec"] & R["data"]) => Promise<R["meta"]>;
+  list?: (query: R["query"]) => Promise<(R["spec"] & R["data"] & R["meta"])[]>;
+  create?: (spec: R["spec"]) => Promise<R["spec"] & R["data"] & R["meta"]>;
 };
 
 interface ResourceStorage<Spec, Type> {

@@ -3,7 +3,12 @@ import {
   Redis,
   RedisConfigDeno,
 } from "https://deno.land/x/upstash_redis@v1.18.4/mod.ts";
-import { Resource, ResourceSpecs, ResourceStorage } from "../types/resource.ts";
+import {
+  AbstractResourceSpecs,
+  Resource,
+  ResourceStorage,
+  ResourceValue,
+} from "../types/resource.ts";
 import { ResourceStorageFactory } from "../types/application.ts";
 import { joinKeys } from "../utils/join_keys.ts";
 
@@ -14,23 +19,22 @@ export class RedisAdapter implements ResourceStorageFactory {
     this.redis = new Redis(init);
   }
 
-  createResourceStorage<R extends ResourceSpecs>(
+  createResourceStorage<R extends AbstractResourceSpecs>(
     _resource: Resource<R>,
     prefix: string,
-  ): ResourceStorage<R["keys"], R["body"], R["meta"]> {
+  ): ResourceStorage<R> {
     return {
       get: async (keys) => {
         const key = joinKeys(keys, { prefix, seperator: "/" });
-        const body = await this.redis.get<R["body"] & R["meta"]>(key);
-        if (!body) {
+        const value = await this.redis.hgetall<ResourceValue<R>>(key);
+        if (!value) {
           throw new errors.NotFound();
         }
-        return { ...keys, ...body };
+        return { ...keys, ...value };
       },
-      put: async (keys, body, meta) => {
+      put: async (keys, value) => {
         const key = joinKeys(keys, { prefix, seperator: "/" });
-        const value = { ...body, ...meta };
-        await this.redis.hmset(key, value);
+        await this.redis.set<ResourceValue<R>>(key, value);
       },
       list: async (query) => {
         const values = await this.redis.lrange();

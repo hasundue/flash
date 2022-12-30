@@ -1,42 +1,55 @@
-import { OperatorRecord } from "./operators.ts";
+import { AbstractBoolean, OperatorRecord } from "./operators.ts";
 
-export interface ResourceSpecs {
+interface ResourceSpecs<BodyType> {
   keys: Record<string, unknown>;
-  body?: Record<string, unknown>; // TODO: extend to non-record types
+  body?: BodyType;
   meta?: Record<string, unknown>;
   query?: Record<string, unknown>;
 }
 
+export type AbstractResourceSpecs = ResourceSpecs<any>;
+
+export type ResourceBodyRecord<R> = R extends ResourceSpecs<infer B>
+  ? B extends Record<string, unknown> ? R["body"] : { body: R["body"] }
+  : never;
+
+export type ResourceObject<R extends AbstractResourceSpecs> =
+  & R["keys"]
+  & ResourceValue<R>;
+
+export type ResourceValue<R extends AbstractResourceSpecs> =
+  & ResourceBodyRecord<R>
+  & R["meta"];
+
 export type Resource<
-  R extends ResourceSpecs,
+  R extends AbstractResourceSpecs,
 > = (context: {
-  storage: ResourceStorage<R["keys"], R["body"], R["meta"]>;
+  storage: ResourceStorage<R>;
   operators: OperatorRecord;
 }) => {
-  list?: (query: R["query"]) => Promise<(R["keys"] & R["body"] & R["meta"])[]>;
-  get?: (keys: R["keys"]) => Promise<R["keys"] & R["body"] & R["meta"]>;
+  list?: (query: R["query"]) => Promise<ResourceObject<R>[]>;
+  get?: (keys: R["keys"]) => Promise<ResourceObject<R>>;
   put?: (
     keys: R["keys"],
     body: R["body"],
-  ) => Promise<R["keys"] & R["body"] & R["meta"]>;
-  set?: (keys: R["keys"], body: Partial<R["body"]>) => Promise<R["meta"]>;
+  ) => Promise<void>;
+  set?: (keys: R["keys"], body: Partial<R["body"]>) => Promise<void>;
 };
 
-export interface ResourceStorage<Keys, Body, Meta> {
+export interface ResourceStorage<R extends AbstractResourceSpecs> {
   list: (
     query: Partial<
       {
-        [K in keyof (Keys & Body & Meta)]: (
-          it: (Keys & Body & Meta)[K],
-        ) => boolean;
+        [K in keyof ResourceObject<R>]: (
+          it: (ResourceObject<R>)[K],
+        ) => AbstractBoolean;
       }
     >,
-  ) => Promise<(Keys & Body & Meta)[]>;
-  get: (keys: Keys) => Promise<Keys & Body & Meta>;
-  put: (keys: Keys, body: Body, meta: Meta) => Promise<void>;
+  ) => Promise<ResourceObject<R>[]>;
+  get: (keys: R["keys"]) => Promise<ResourceObject<R>>;
+  put: (keys: R["keys"], value: ResourceValue<R>) => Promise<void>;
   set: (
-    keys: Keys,
-    body: Partial<Body>,
-    meta?: Partial<Meta>,
+    keys: R["keys"],
+    fields: Partial<ResourceValue<R>>,
   ) => Promise<void>;
 }

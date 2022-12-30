@@ -13,6 +13,8 @@ type RelationalOperatorName = typeof RELATIONAL_OPERATORS[number];
 type LogicalOperatorName = typeof LOGICAL_OPERATORS[number];
 type OperatorName = RelationalOperatorName | LogicalOperatorName;
 
+export type AbstractBoolean = Boolean<OperatorName>;
+
 type Boolean<Op extends OperatorName> =
   | True<Op>
   | False<Op>;

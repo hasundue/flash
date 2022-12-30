@@ -17,12 +17,10 @@ export const repos: Resource<{
   },
   put: async ({ owner, repo }, { tags }) => {
     const updated_at = new Date();
-    await storage.put({ owner, repo }, { tags }, { updated_at });
-    return { owner, repo, tags, updated_at };
+    await storage.put({ owner, repo }, { tags, updated_at });
   },
   set: async ({ owner, repo }, { tags }) => {
     const updated_at = new Date();
-    await storage.set({ owner, repo }, { tags }, { updated_at });
-    return { updated_at };
+    await storage.set({ owner, repo }, { tags, updated_at });
   },
 });

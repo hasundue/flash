@@ -3,7 +3,7 @@
 ![ci](https://github.com/hasundue/flash/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/hasundue/flash/branch/main/graph/badge.svg?token=DRMQQ7ICNB)](https://codecov.io/gh/hasundue/flash)
 
-Flash is a resource-oriented abstraction layer for Hono, with a flavor of functional programming paradigm.
+Flash is a resource-oriented abstraction layer for web frameworks, with a flavor of functional programming paradigm.
 
 > **Warning**\
 > Flash is still an alpha version. Do not use it for any practical use yet,

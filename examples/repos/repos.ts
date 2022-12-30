@@ -5,10 +5,11 @@ export const repos: Resource<{
   body: { tags: string[] };
   meta: { updated_at: Date };
   query: { since?: Date; until?: Date };
-}> = ({ storage }) => ({
+}> = ({ storage, operators }) => ({
   list: async ({ since, until }) => {
+    const { gt, lt, and } = operators;
     return await storage.list({
-      updated_at: (it) => it > (since ?? 0) && it < (until ?? Infinity),
+      updated_at: (it) => and(gt(it, since), lt(it, until)),
     });
   },
   get: async ({ owner, repo }) => {
@@ -19,9 +20,9 @@ export const repos: Resource<{
     await storage.put({ owner, repo }, { tags }, { updated_at });
     return { owner, repo, tags, updated_at };
   },
-  update: async ({ owner, repo }, { tags }) => {
+  set: async ({ owner, repo }, { tags }) => {
     const updated_at = new Date();
-    await storage.update({ owner, repo }, { tags }, { updated_at });
+    await storage.set({ owner, repo }, { tags }, { updated_at });
     return { updated_at };
   },
 });

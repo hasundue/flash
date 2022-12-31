@@ -20,12 +20,14 @@ export class RedisAdapter implements ResourceStorageFactory {
   constructor(init: RedisConfigDeno) {
     this.redis = new Redis(init);
     this.operators = {
-      eq: (x) => {
-        return { bool: true, value: "" };
-      },
+      eq: (x) => (f) => "hoge",
+      // ne: (x) => (f) => "hoge",
+      // lt: (x) => (f) => "hoge",
+      // gt: (x) => (f) => "hoge",
+      // and: (x) => (f) => "hoge",
+      // or: (x) => (f) => "hoge",
     };
   }
-
   createResourceStorage<R extends AbstractResourceSpecs>(
     _resource: Resource<R>,
     prefix: string,

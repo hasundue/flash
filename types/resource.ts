@@ -1,4 +1,9 @@
-import { QueryOperatorRecord, QueryOperatorResult } from "./operators.ts";
+import {
+  Equality,
+  Inequality,
+  Quantity,
+  QueryOperatorRecord,
+} from "./operators.ts";
 
 interface ResourceSpecs<BodyType> {
   keys: Record<string, unknown>;
@@ -38,7 +43,11 @@ export type Resource<
 
 export interface ResourceStorage<R extends AbstractResourceSpecs> {
   list: (
-    query: { [K in keyof ResourceObject<R>]?: QueryOperatorResult },
+    query: {
+      [K in keyof ResourceObject<R>]?: ResourceObject<R>[K] extends Quantity
+        ? Inequality | Equality
+        : Equality;
+    },
   ) => Promise<ResourceObject<R>[]>;
   get: (keys: R["keys"]) => Promise<ResourceObject<R>>;
   put: (keys: R["keys"], value: ResourceValue<R>) => Promise<void>;

@@ -3,7 +3,7 @@ const EQUALITY_OPERATORS = [
   "ne",
 ] as const;
 
-const COMPARISON_OPERATORS = [
+const INEQUALITY_OPERATORS = [
   "lt",
   "gt",
 ] as const;
@@ -13,36 +13,30 @@ const LOGICAL_OPERATORS = [
   "or",
 ] as const;
 
+export type Quantity = Date | number;
+
 type EqualityOperatorName = typeof EQUALITY_OPERATORS[number];
-type ComparisonOperatorName = typeof COMPARISON_OPERATORS[number];
+type InequalityOperatorName = typeof INEQUALITY_OPERATORS[number];
 type LogicalOperatorName = typeof LOGICAL_OPERATORS[number];
 
-export type QueryOperator =
-  | EqualityOperator
-  | ComparisonOperator
-  | LogicalOperator;
+export type Equality = (field: string, _type: "equality") => unknown;
+export type Inequality = (field: string, _type: "inequality") => unknown;
 
-type QueryUndefined = { it: undefined };
-type QueryBoolean = { it: unknown };
+type EqualityOperator = (x: unknown) => Equality;
+type InequalityOperator = (x: Quantity | undefined) => Inequality;
 
-export type QueryOperatorResult = QueryUndefined | QueryBoolean;
-
-type EqualityOperator = <T extends unknown>(
-  x: T | undefined,
-) => typeof x extends undefined ? QueryUndefined : QueryBoolean;
-
-type ComparisonOperator = <T extends unknown>(
-  x: T | undefined,
-) => typeof x extends undefined ? QueryUndefined : QueryBoolean;
-
-type LogicalOperator = (...xs: QueryOperatorResult[]) => QueryBoolean;
+type LogicalOperator = <
+  T extends Equality[] | Inequality[] | (Equality | Inequality)[],
+>(
+  ...xs: T
+) => T extends Equality[] ? Equality : Inequality;
 
 export type QueryOperatorRecord =
   & {
     [O in EqualityOperatorName]: EqualityOperator;
   }
   & {
-    [O in ComparisonOperatorName]: ComparisonOperator;
+    [O in InequalityOperatorName]: InequalityOperator;
   }
   & {
     [O in LogicalOperatorName]: LogicalOperator;

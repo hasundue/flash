@@ -1,15 +1,17 @@
-import { Resource, ResourceSpecs, ResourceStorage } from "./resource.ts";
-
-// export type ResourceStorageFactory = <R extends ResourceSpecs>(config: {
-//   resource: Resource<R>;
-//   prefix: string;
-// }) => ResourceStorage<R["keys"], R["body"], R["meta"]>;
+import { OperatorRecord } from "./operators.ts";
+import {
+  AbstractResourceSpecs,
+  Resource,
+  ResourceStorage,
+} from "./resource.ts";
 
 export interface ResourceStorageFactory {
-  createResourceStorage<R extends ResourceSpecs>(
+  operators: OperatorRecord;
+
+  createResourceStorage<R extends AbstractResourceSpecs>(
     resource: Resource<R>,
     prefix: string,
-  ): ResourceStorage<R["keys"], R["body"], R["meta"]>;
+  ): ResourceStorage<R>;
 }
 
 export type Application = {

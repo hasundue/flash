@@ -1,4 +1,4 @@
-import { AbstractBoolean, OperatorRecord } from "./operators.ts";
+import { QueryOperatorRecord, QueryOperatorResult } from "./operators.ts";
 
 interface ResourceSpecs<BodyType> {
   keys: Record<string, unknown>;
@@ -25,7 +25,7 @@ export type Resource<
   R extends AbstractResourceSpecs,
 > = (context: {
   storage: ResourceStorage<R>;
-  operators: OperatorRecord;
+  operators: QueryOperatorRecord;
 }) => {
   list?: (query: R["query"]) => Promise<ResourceObject<R>[]>;
   get?: (keys: R["keys"]) => Promise<ResourceObject<R>>;
@@ -38,13 +38,7 @@ export type Resource<
 
 export interface ResourceStorage<R extends AbstractResourceSpecs> {
   list: (
-    query: Partial<
-      {
-        [K in keyof ResourceObject<R>]: (
-          it: (ResourceObject<R>)[K],
-        ) => AbstractBoolean;
-      }
-    >,
+    query: { [K in keyof ResourceObject<R>]?: QueryOperatorResult },
   ) => Promise<ResourceObject<R>[]>;
   get: (keys: R["keys"]) => Promise<ResourceObject<R>>;
   put: (keys: R["keys"], value: ResourceValue<R>) => Promise<void>;

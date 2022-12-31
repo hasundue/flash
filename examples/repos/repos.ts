@@ -9,7 +9,7 @@ export const repos: Resource<{
   list: async ({ since, until }) => {
     const { gt, lt, and } = operators;
     return await storage.list({
-      updated_at: (it) => and(gt(it, since), lt(it, until)),
+      updated_at: and(gt(since), lt(until)),
     });
   },
   get: async ({ owner, repo }) => {

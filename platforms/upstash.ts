@@ -9,14 +9,21 @@ import {
   ResourceStorage,
   ResourceValue,
 } from "../types/resource.ts";
+import { QueryOperatorRecord } from "../types/operators.ts";
 import { ResourceStorageFactory } from "../types/application.ts";
 import { joinKeys } from "../utils/join_keys.ts";
 
 export class RedisAdapter implements ResourceStorageFactory {
   protected redis: Redis;
+  protected operators: QueryOperatorRecord;
 
   constructor(init: RedisConfigDeno) {
     this.redis = new Redis(init);
+    this.operators = {
+      eq: (x) => {
+        return { bool: true, value: "" };
+      },
+    };
   }
 
   createResourceStorage<R extends AbstractResourceSpecs>(
@@ -34,10 +41,10 @@ export class RedisAdapter implements ResourceStorageFactory {
       },
       put: async (keys, value) => {
         const key = joinKeys(keys, { prefix, seperator: "/" });
-        await this.redis.set<ResourceValue<R>>(key, value);
+        await this.redis.hset<ResourceValue<R>>(key, value);
       },
       list: async (query) => {
-        const values = await this.redis.lrange();
+        const values = await this.redis.zadd();
       },
     };
   }

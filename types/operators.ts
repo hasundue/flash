@@ -1,5 +1,9 @@
-const RELATIONAL_OPERATORS = [
+const EQUALITY_OPERATORS = [
   "eq",
+  "ne",
+] as const;
+
+const COMPARISON_OPERATORS = [
   "lt",
   "gt",
 ] as const;
@@ -9,36 +13,37 @@ const LOGICAL_OPERATORS = [
   "or",
 ] as const;
 
-type RelationalOperatorName = typeof RELATIONAL_OPERATORS[number];
+type EqualityOperatorName = typeof EQUALITY_OPERATORS[number];
+type ComparisonOperatorName = typeof COMPARISON_OPERATORS[number];
 type LogicalOperatorName = typeof LOGICAL_OPERATORS[number];
-type OperatorName = RelationalOperatorName | LogicalOperatorName;
 
-export type AbstractBoolean = Boolean<OperatorName>;
+export type QueryOperator =
+  | EqualityOperator
+  | ComparisonOperator
+  | LogicalOperator;
 
-type Boolean<Op extends OperatorName> =
-  | True<Op>
-  | False<Op>;
+type QueryUndefined = { it: undefined };
+type QueryBoolean = { it: unknown };
 
-type True<Op extends OperatorName> = true & { _op: Op };
-type False<Op extends OperatorName> = false & { _op: Op };
+export type QueryOperatorResult = QueryUndefined | QueryBoolean;
 
-export type RelationalOperator<Op extends RelationalOperatorName> = <
-  T extends unknown,
->(
-  a: T | undefined,
-  b: T | undefined,
-) => typeof a extends undefined ? True<Op>
-  : typeof b extends undefined ? True<Op>
-  : Boolean<Op>;
+type EqualityOperator = <T extends unknown>(
+  x: T | undefined,
+) => typeof x extends undefined ? QueryUndefined : QueryBoolean;
 
-type LogicalOperator<Op extends LogicalOperatorName> = (
-  ...xs: Boolean<OperatorName>[]
-) => Boolean<Op>;
+type ComparisonOperator = <T extends unknown>(
+  x: T | undefined,
+) => typeof x extends undefined ? QueryUndefined : QueryBoolean;
 
-export type OperatorRecord =
+type LogicalOperator = (...xs: QueryOperatorResult[]) => QueryBoolean;
+
+export type QueryOperatorRecord =
   & {
-    [Op in RelationalOperatorName]: RelationalOperator<Op>;
+    [O in EqualityOperatorName]: EqualityOperator;
   }
   & {
-    [Op in LogicalOperatorName]: LogicalOperator<Op>;
+    [O in ComparisonOperatorName]: ComparisonOperator;
+  }
+  & {
+    [O in LogicalOperatorName]: LogicalOperator;
   };

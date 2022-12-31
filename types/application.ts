@@ -1,17 +1,17 @@
-import { OperatorRecord } from "./operators.ts";
+import { ConcreteQueryOperatorRecord } from "./operators.ts";
 import {
   AbstractResourceSpecs,
+  ConcreteResourceStorage,
   Resource,
-  ResourceStorage,
 } from "./resource.ts";
 
-export interface ResourceStorageFactory {
-  operators: OperatorRecord;
+export interface ResourceStorageFactory<C, T> {
+  operators: ConcreteQueryOperatorRecord<C, T>;
 
   createResourceStorage<R extends AbstractResourceSpecs>(
     resource: Resource<R>,
-    prefix: string,
-  ): ResourceStorage<R>;
+    root: string,
+  ): ConcreteResourceStorage<R, C, T>;
 }
 
 export type Application = {
@@ -22,6 +22,6 @@ export type Application = {
       plural: string;
     };
     main: Resource<any>;
-    storage: ResourceStorageFactory;
+    storage: ResourceStorageFactory<any, any>;
   }[];
 };

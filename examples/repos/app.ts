@@ -1,8 +1,8 @@
 import { Application } from "../../types/application.ts";
-import { RedisAdapter } from "../../platforms/upstash.ts";
+import { UpstashRedis } from "../../platforms/upstash.ts";
 import { repos } from "./repos.ts";
 
-const redis = new RedisAdapter({
+const redis = new UpstashRedis({
   url: Deno.env.get("REDIS_URL")!,
   token: Deno.env.get("REDIS_TOKEN")!,
 });

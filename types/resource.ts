@@ -1,4 +1,6 @@
 import {
+  ConcreteEquality,
+  ConcreteInequality,
   Equality,
   Inequality,
   Quantity,
@@ -26,6 +28,11 @@ export type ResourceValue<R extends AbstractResourceSpecs> =
   & ResourceBodyRecord<R>
   & R["meta"];
 
+export type QuantityRecord<R extends AbstractResourceSpecs> = Extract<
+  ResourceValue<R>,
+  Record<string, Quantity>
+>;
+
 export type Resource<
   R extends AbstractResourceSpecs,
 > = (context: {
@@ -47,6 +54,26 @@ export interface ResourceStorage<R extends AbstractResourceSpecs> {
       [K in keyof ResourceObject<R>]?: ResourceObject<R>[K] extends Quantity
         ? Inequality | Equality
         : Equality;
+    },
+  ) => Promise<ResourceObject<R>[]>;
+  get: (keys: R["keys"]) => Promise<ResourceObject<R>>;
+  put: (keys: R["keys"], value: ResourceValue<R>) => Promise<void>;
+  set: (
+    keys: R["keys"],
+    fields: Partial<ResourceValue<R>>,
+  ) => Promise<void>;
+}
+
+export interface ConcreteResourceStorage<
+  R extends AbstractResourceSpecs,
+  C,
+  T,
+> {
+  list: (
+    query: {
+      [K in keyof ResourceObject<R>]?: ResourceObject<R>[K] extends Quantity
+        ? ConcreteInequality<C, T> | ConcreteEquality<C, T>
+        : ConcreteEquality<C, T>;
     },
   ) => Promise<ResourceObject<R>[]>;
   get: (keys: R["keys"]) => Promise<ResourceObject<R>>;

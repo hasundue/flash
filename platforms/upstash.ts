@@ -5,22 +5,38 @@ import {
 } from "https://deno.land/x/upstash_redis@v1.18.4/mod.ts";
 import {
   AbstractResourceSpecs,
+  ConcreteResourceStorage,
   Resource,
-  ResourceStorage,
   ResourceValue,
 } from "../types/resource.ts";
-import { QueryOperatorRecord } from "../types/operators.ts";
+import { ConcreteQueryOperatorRecord, isQuantity } from "../types/operators.ts";
 import { ResourceStorageFactory } from "../types/application.ts";
 import { joinKeys } from "../utils/join_keys.ts";
 
-export class RedisAdapter implements ResourceStorageFactory {
+const toScore = (x: unknown): number | undefined => {
+  if (!isQuantity(x)) {
+    return undefined;
+  }
+  if (x instanceof Date) {
+    return x.valueOf();
+  }
+  return x;
+};
+
+type C = { root: string; field: string };
+type T = Promise<number[]>;
+
+export class UpstashRedis implements ResourceStorageFactory<C, T> {
   protected redis: Redis;
-  protected operators: QueryOperatorRecord;
+
+  protected operators: ConcreteQueryOperatorRecord<C, T>;
 
   constructor(init: RedisConfigDeno) {
     this.redis = new Redis(init);
     this.operators = {
-      eq: (x) => (f) => "hoge",
+      eq: (value) => async ({ root, field }) => {
+        return await this.redis.get(`${root}:s:${field}:${value}`) ?? [];
+      },
       // ne: (x) => (f) => "hoge",
       // lt: (x) => (f) => "hoge",
       // gt: (x) => (f) => "hoge",
@@ -28,13 +44,14 @@ export class RedisAdapter implements ResourceStorageFactory {
       // or: (x) => (f) => "hoge",
     };
   }
+
   createResourceStorage<R extends AbstractResourceSpecs>(
     _resource: Resource<R>,
-    prefix: string,
-  ): ResourceStorage<R> {
+    root: string,
+  ): ConcreteResourceStorage<R, C, T> {
     return {
       get: async (keys) => {
-        const key = joinKeys(keys, { prefix, seperator: "/" });
+        const key = joinKeys(keys, { seperator: ":", prefix: root });
         const value = await this.redis.hgetall<ResourceValue<R>>(key);
         if (!value) {
           throw new errors.NotFound();
@@ -42,11 +59,34 @@ export class RedisAdapter implements ResourceStorageFactory {
         return { ...keys, ...value };
       },
       put: async (keys, value) => {
-        const key = joinKeys(keys, { prefix, seperator: "/" });
-        await this.redis.hset<ResourceValue<R>>(key, value);
+        const key = joinKeys(keys, { seperator: ":", prefix: root });
+        const record = { ...keys, ...value };
+
+        await this.redis.hset(key, value);
+
+        for (const field in record) {
+          const value = record[field];
+
+          await this.redis.sadd(`${root}:s:${field}:${value}`, key);
+
+          const score = toScore(value);
+          if (score) {
+            await this.redis.zadd(`${root}:z:${field}`, { score, member: key });
+          }
+        }
       },
       list: async (query) => {
-        const values = await this.redis.zadd();
+        let keys: number[] = [];
+
+        for (const field in query) {
+          const condition = query[field];
+          if (condition) {
+            keys = keys.concat(await condition({ root, field }));
+          }
+        }
+        const values = await this.redis.mget<ResourceValue<R>>(
+          ...keys.toString(),
+        );
       },
     };
   }

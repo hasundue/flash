@@ -1,3 +1,4 @@
+import { distinct } from "https://deno.land/std@0.170.0/collections/distinct.ts";
 import { errors } from "https://deno.land/std@0.170.0/http/http_errors.ts";
 import {
   Redis,
@@ -11,7 +12,7 @@ import {
 } from "../types/resource.ts";
 import { ConcreteQueryOperatorRecord, isQuantity } from "../types/operators.ts";
 import { ResourceStorageFactory } from "../types/application.ts";
-import { joinKeys } from "../utils/join_keys.ts";
+import { keyUtils } from "../utils/join_keys.ts";
 
 const toScore = (x: unknown): number | undefined => {
   if (!isQuantity(x)) {
@@ -24,7 +25,7 @@ const toScore = (x: unknown): number | undefined => {
 };
 
 type C = { root: string; field: string };
-type T = Promise<number[]>;
+type T = Promise<string[]>;
 
 export class UpstashRedis implements ResourceStorageFactory<C, T> {
   protected redis: Redis;
@@ -37,9 +38,8 @@ export class UpstashRedis implements ResourceStorageFactory<C, T> {
       eq: (value) => async ({ root, field }) => {
         return await this.redis.get(`${root}:s:${field}:${value}`) ?? [];
       },
-      // ne: (x) => (f) => "hoge",
       // lt: (x) => (f) => "hoge",
-      // gt: (x) => (f) => "hoge",
+      gt: (value) => async ({ root, field }) => "hoge",
       // and: (x) => (f) => "hoge",
       // or: (x) => (f) => "hoge",
     };
@@ -49,9 +49,11 @@ export class UpstashRedis implements ResourceStorageFactory<C, T> {
     _resource: Resource<R>,
     root: string,
   ): ConcreteResourceStorage<R, C, T> {
+    const { join } = keyUtils({ seperator: ":", prefix: root });
+
     return {
       get: async (keys) => {
-        const key = joinKeys(keys, { seperator: ":", prefix: root });
+        const key = join(keys);
         const value = await this.redis.hgetall<ResourceValue<R>>(key);
         if (!value) {
           throw new errors.NotFound();
@@ -59,7 +61,7 @@ export class UpstashRedis implements ResourceStorageFactory<C, T> {
         return { ...keys, ...value };
       },
       put: async (keys, value) => {
-        const key = joinKeys(keys, { seperator: ":", prefix: root });
+        const key = join(keys);
         const record = { ...keys, ...value };
 
         await this.redis.hset(key, value);
@@ -76,17 +78,19 @@ export class UpstashRedis implements ResourceStorageFactory<C, T> {
         }
       },
       list: async (query) => {
-        let keys: number[] = [];
+        let hashKeys: string[] = [];
 
         for (const field in query) {
           const condition = query[field];
           if (condition) {
-            keys = keys.concat(await condition({ root, field }));
+            hashKeys = hashKeys.concat(await condition({ root, field }));
           }
         }
-        const values = await this.redis.mget<ResourceValue<R>>(
-          ...keys.toString(),
-        );
+        hashKeys = distinct(hashKeys);
+
+        const values = await this.redis.mget<ResourceValue<R>>(...hashKeys);
+
+        const resourceKeys = split(hashKeys[0]);
       },
     };
   }

@@ -1,10 +1,12 @@
-export function joinKeys(
+interface KeyUtilOptions {
+  seperator: string;
+  prefix?: string;
+  suffix?: string;
+}
+
+function joinKeys(
   record: Record<string, unknown>,
-  options: {
-    seperator: string;
-    prefix?: string;
-    suffix?: string;
-  },
+  options: KeyUtilOptions,
 ): string {
   const { prefix, suffix, seperator } = options;
   let result = prefix ?? "";
@@ -16,4 +18,19 @@ export function joinKeys(
     result += seperator + suffix;
   }
   return result;
+}
+
+function splitKey(
+  joined: string,
+  fields: 
+  options: KeyUtilOptions,
+): Record<string, unknown> {
+  const strs = joined.split(options.seperator);
+  return Object.fromEntries(
+}
+
+export function keyUtils(options: KeyUtilOptions) {
+  return {
+    join: (keys: Record<string, unknown>) => joinKeys(keys, options),
+  };
 }

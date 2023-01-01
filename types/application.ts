@@ -14,7 +14,7 @@ export interface ResourceStorageFactory<C, T> {
   ): ConcreteResourceStorage<R, C, T>;
 }
 
-export type Application = {
+export interface Application {
   resources: {
     name: string;
     alias: {
@@ -24,4 +24,4 @@ export type Application = {
     main: Resource<any>;
     storage: ResourceStorageFactory<any, any>;
   }[];
-};
+}

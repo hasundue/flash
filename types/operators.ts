@@ -18,6 +18,8 @@ export function isQuantity(value: unknown): value is Quantity {
   return typeof value === "number" || value instanceof Date;
 }
 
+export type Value = Quantity | string;
+
 type EqualityOperatorName = typeof EQUALITY_OPERATORS[number];
 type InequalityOperatorName = typeof INEQUALITY_OPERATORS[number];
 type LogicalOperatorName = typeof LOGICAL_OPERATORS[number];
@@ -25,7 +27,7 @@ type LogicalOperatorName = typeof LOGICAL_OPERATORS[number];
 export type Equality = (context: any, _type?: "equality") => any;
 export type Inequality = (context: any, _type?: "inequality") => any;
 
-type EqualityOperator = (x: unknown) => Equality;
+type EqualityOperator = (x: Value | undefined) => Equality;
 type InequalityOperator = (x: Quantity | undefined) => Inequality;
 
 type LogicalOperator = <

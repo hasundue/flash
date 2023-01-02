@@ -1,6 +1,6 @@
-import { Application } from "../../types/application.ts";
-import { UpstashRedis } from "../../platforms/upstash.ts";
-import { repos } from "./repos.ts";
+import { Application } from "../core/application.ts";
+import { UpstashRedis } from "../platforms/upstash.ts";
+import { repository } from "./resources/repository.ts";
 
 const redis = new UpstashRedis({
   url: Deno.env.get("REDIS_URL")!,
@@ -12,7 +12,7 @@ export const app: Application = {
     {
       name: "repository",
       alias: { singular: "repo", plural: "repos" },
-      main: repos,
+      main: repository,
       storage: redis,
     },
   ],

@@ -1,81 +1,99 @@
-import { distinct } from "https://deno.land/std@0.170.0/collections/distinct.ts";
+import {
+  distinct,
+  filterValues,
+  intersect,
+  union,
+} from "https://deno.land/std@0.170.0/collections/mod.ts";
 import { errors } from "https://deno.land/std@0.170.0/http/http_errors.ts";
 import {
   Redis,
   RedisConfigDeno,
 } from "https://deno.land/x/upstash_redis@v1.18.4/mod.ts";
 import {
-  AbstractResourceSpecs,
+  AbstractResourceType,
   ConcreteResourceStorage,
   Resource,
-  ResourceValue,
-} from "../types/resource.ts";
-import { ConcreteQueryOperatorRecord, isQuantity } from "../types/operators.ts";
-import { ResourceStorageFactory } from "../types/application.ts";
-import { keyUtils } from "../utils/join_keys.ts";
+  ResourceObject,
+} from "../core/resource.ts";
+import {
+  ConcreteQueryOperatorRecord,
+  isPrimitive,
+  isQuantity,
+  Quantity,
+} from "../core/query.ts";
+import { ResourceStorageFactory } from "../core/application.ts";
+import { joinKeys } from "../utils/join_keys.ts";
 
-const toScore = (x: unknown): number | undefined => {
-  if (!isQuantity(x)) {
-    return undefined;
-  }
-  if (x instanceof Date) {
-    return x.valueOf();
-  }
-  return x;
-};
+const toScore = (x: Quantity) => x instanceof Date ? x.valueOf() : x;
 
 type C = { root: string; field: string };
 type T = Promise<string[]>;
 
-export class UpstashRedis implements ResourceStorageFactory<C, T> {
+export class UpstashRedis extends ResourceStorageFactory<C, T> {
   protected redis: Redis;
 
   protected operators: ConcreteQueryOperatorRecord<C, T>;
 
   constructor(init: RedisConfigDeno) {
+    super();
     this.redis = new Redis(init);
     this.operators = {
       eq: (value) => async ({ root, field }) => {
         return await this.redis.get(`${root}:s:${field}:${value}`) ?? [];
       },
-      // lt: (x) => (f) => "hoge",
-      gt: (value) => async ({ root, field }) => "hoge",
-      // and: (x) => (f) => "hoge",
-      // or: (x) => (f) => "hoge",
+      gt: (value) => async ({ root, field }) => {
+        const score = toScore(value);
+        return await this.redis.zrange(`${root}:z:${field}`, score, -1) ?? [];
+      },
+      lt: (value) => async ({ root, field }) => {
+        const score = toScore(value);
+        return await this.redis.zrange(`${root}:z:${field}`, 0, score) ?? [];
+      },
+      and: (...qs) => async ({ root, field }) => {
+        const kss = qs.map((it) => it({ root, field }));
+        return intersect(kss);
+      },
+      or: (...qs) => async ({ root, field }) => {
+        const kss = qs.map((it) => it({ root, field }));
+        return union(kss);
+      },
     };
   }
 
-  createResourceStorage<R extends AbstractResourceSpecs>(
+  createResourceStorage<R extends AbstractResourceType>(
     _resource: Resource<R>,
     root: string,
   ): ConcreteResourceStorage<R, C, T> {
-    const { join } = keyUtils({ seperator: ":", prefix: root });
+    const joinKeyOptions = { seperator: ":", prefix: root };
 
     return {
-      get: async (keys) => {
-        const key = join(keys);
-        const value = await this.redis.hgetall<ResourceValue<R>>(key);
-        if (!value) {
+      get: async (spec) => {
+        const key = joinKeys(spec, joinKeyOptions);
+        const object = await this.redis.hgetall<ResourceObject<R>>(key);
+        if (!object) {
           throw new errors.NotFound();
         }
-        return { ...keys, ...value };
+        return object;
       },
-      put: async (keys, value) => {
-        const key = join(keys);
-        const record = { ...keys, ...value };
+      put: async (spec, value) => {
+        const key = joinKeys(spec, joinKeyOptions);
+        const object = { ...spec, ...value };
 
-        await this.redis.hset(key, value);
+        const pipeline = this.redis.multi();
 
-        for (const field in record) {
-          const value = record[field];
+        pipeline.hset(key, object);
 
-          await this.redis.sadd(`${root}:s:${field}:${value}`, key);
+        for (const field in filterValues(object, isPrimitive)) {
+          const value = object[field];
 
-          const score = toScore(value);
-          if (score) {
-            await this.redis.zadd(`${root}:z:${field}`, { score, member: key });
+          pipeline.sadd(`${root}:s:${field}:${value}`, key);
+
+          if (isQuantity(value)) {
+            const score = toScore(value);
+            pipeline.zadd(`${root}:z:${field}`, { score, member: key });
           }
         }
+        await pipeline.exec();
       },
       list: async (query) => {
         let hashKeys: string[] = [];
@@ -87,10 +105,36 @@ export class UpstashRedis implements ResourceStorageFactory<C, T> {
           }
         }
         hashKeys = distinct(hashKeys);
+        return await this.redis.mget<ResourceObject<R>[]>(...hashKeys);
+      },
+      set: async (spec, value) => {
+        const key = joinKeys(spec, joinKeyOptions);
+        const object = { ...spec, ...value };
 
-        const values = await this.redis.mget<ResourceValue<R>>(...hashKeys);
+        const existing = await this.redis.hmget(key, ...Object.keys(value));
+        if (!existing) {
+          throw new errors.NotFound();
+        }
 
-        const resourceKeys = split(hashKeys[0]);
+        const pipeline = this.redis.multi();
+        pipeline.hmset(key, object);
+
+        for (const field in filterValues(object, isPrimitive)) {
+          const value = object[field];
+          if (!value) continue;
+
+          pipeline.smove(
+            `${root}:s:${field}:${existing[field]}`,
+            `${root}:s:${field}:${value}`,
+            key,
+          );
+
+          if (isQuantity(value)) {
+            const score = toScore(value);
+            pipeline.zadd(`${root}:z:${field}`, { score, member: key });
+          }
+        }
+        await pipeline.exec();
       },
     };
   }

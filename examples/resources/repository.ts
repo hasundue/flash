@@ -1,11 +1,13 @@
-import { Resource } from "../../types/resource.ts";
+import { Resource } from "../../core/resource.ts";
 
-export const repos: Resource<{
-  keys: { owner: string; repo: string };
+export type Repository = {
+  spec: { owner: string; repo: string };
   body: { tags: string[] };
-  meta: { updated_at: Date };
+  meta: { created_at: Date; updated_at: Date };
   query: { since?: Date; until?: Date };
-}> = ({ storage, operators }) => ({
+};
+
+export const repository: Resource<Repository> = ({ storage, operators }) => ({
   list: async ({ since, until }) => {
     const { gt, lt, and } = operators;
     return await storage.list({
@@ -16,8 +18,9 @@ export const repos: Resource<{
     return await storage.get({ owner, repo });
   },
   put: async ({ owner, repo }, { tags }) => {
-    const updated_at = new Date();
-    await storage.put({ owner, repo }, { tags, updated_at });
+    const created_at = new Date();
+    const updated_at = created_at;
+    await storage.put({ owner, repo }, { tags, created_at, updated_at });
   },
   set: async ({ owner, repo }, { tags }) => {
     const updated_at = new Date();

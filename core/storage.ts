@@ -28,7 +28,7 @@ export interface ConcreteResourceStorage<R extends AbstractResourceType, C, T>
 type TestResource = {
   spec: { owner: string; repo: string };
   body: { tags: string[] };
-  meta: { created_at: number; updated_at: number };
+  meta: { created_at: number };
 };
 
 export abstract class StorageAdapter<C, T> {
@@ -45,17 +45,12 @@ export abstract class StorageAdapter<C, T> {
 
   test() {
     Deno.test(this.name, async (t) => {
-      const { and, or, eq } = this.operators;
+      const { and, or, eq, gt, lt } = this.operators;
 
       const owner = "hasundue";
       const repo = "flash";
 
-      const tags = ["test"];
-      const started = Date.now();
-
-      const storage = this.createResourceStorage<TestResource>(
-        `test:${started}`,
-      );
+      const storage = this.createResourceStorage<TestResource>("test");
 
       await t.step("flush", async () => {
         await storage.flush();
@@ -64,38 +59,34 @@ export abstract class StorageAdapter<C, T> {
       });
 
       await t.step("put", async () => {
+        const now = Date.now();
+        const tags = ["test"];
+
         await storage.put({ owner, repo }, {
           tags,
-          created_at: started,
-          updated_at: started,
+          created_at: now,
         });
         assertObjectMatch(
           await storage.get({ owner, repo }),
-          { owner, repo, tags, created_at: started, updated_at: started },
+          { owner, repo, tags, created_at: now },
         );
       });
 
       await t.step("set", async () => {
         const newTags = ["test", "flash"];
-        const now = Date.now();
 
-        await storage.set({ owner, repo }, {
-          tags: newTags,
-          updated_at: now,
-        });
+        await storage.set({ owner, repo }, { tags: newTags });
+
         assertObjectMatch(
           await storage.get({ owner, repo }),
-          { owner, repo, tags: newTags, created_at: started, updated_at: now },
+          { owner, repo, tags: newTags },
         );
       });
 
       await t.step("list", async (t) => {
-        const now = Date.now();
-
         await storage.put({ owner, repo: "example" }, {
-          tags: [],
-          created_at: now,
-          updated_at: now,
+          tags: ["test"],
+          created_at: Date.now(),
         });
 
         await t.step("ALL (2)", async () => {
@@ -137,6 +128,18 @@ export abstract class StorageAdapter<C, T> {
           const result = await storage.list({
             owner: or(eq("hasundue"), eq("denoland")),
           });
+          assertEquals(result.length, 0);
+        });
+
+        await t.step("created_at < now (2)", async () => {
+          const now = Date.now();
+          const result = await storage.list({ created_at: lt(now) });
+          assertEquals(result.length, 2);
+        });
+
+        await t.step("created_at > now (0)", async () => {
+          const now = Date.now();
+          const result = await storage.list({ created_at: gt(now) });
           assertEquals(result.length, 0);
         });
       });

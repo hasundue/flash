@@ -86,11 +86,11 @@ type ConcreteInequality<Context, Result> = (
 ) => Result;
 
 type ConcreteEqualityOperator<Context, Result> = (
-  x: Primitive,
+  x: Primitive | undefined,
 ) => ConcreteEquality<Context, Result>;
 
 type ConcreteInequalityOperator<Context, Result> = (
-  x: Quantity,
+  x: Quantity | undefined,
 ) => ConcreteInequality<Context, Result>;
 
 type ConcreteLogicalOperator<C, R> = (

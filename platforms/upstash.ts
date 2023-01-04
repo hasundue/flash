@@ -23,20 +23,29 @@ type T = Promise<string[]>;
 
 export class Redis extends StorageAdapter<C, T> {
   protected redis: RedisClient;
-  protected operators: ConcreteQueryOperatorRecord<C, T>;
+  operators: ConcreteQueryOperatorRecord<C, T>;
 
   constructor(init: RedisConfigDeno) {
     super("Upstash Redis");
     this.redis = new RedisClient(init);
     this.operators = {
       eq: (value) => async ({ root, field }) => {
+        if (!value) {
+          return await this.redis.smembers(`${root}:k`);
+        }
         return await this.redis.smembers(`${root}:s:${field}:${value}`) ?? [];
       },
       gt: (value) => async ({ root, field }) => {
+        if (!value) {
+          return await this.redis.smembers(`${root}:k`);
+        }
         const score = toScore(value);
         return await this.redis.zrange(`${root}:z:${field}`, score, -1) ?? [];
       },
       lt: (value) => async ({ root, field }) => {
+        if (!value) {
+          return await this.redis.smembers(`${root}:k`);
+        }
         const score = toScore(value);
         return await this.redis.zrange(`${root}:z:${field}`, 0, score) ?? [];
       },

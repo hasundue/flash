@@ -21,4 +21,4 @@ export const app = await build({
   ],
 });
 
-// serve(app.fetch);
+serve(app.fetch);

@@ -33,7 +33,7 @@ type TestResource = {
 
 export abstract class StorageAdapter<C, T> {
   protected name: string;
-  protected abstract operators: ConcreteQueryOperatorRecord<C, T>;
+  abstract operators: ConcreteQueryOperatorRecord<C, T>;
 
   abstract createResourceStorage<R extends AbstractResourceType>(
     root: string,

@@ -3,7 +3,7 @@ import { intersect } from "https://deno.land/std@0.170.0/collections/intersect.t
 import { union } from "https://deno.land/std@0.170.0/collections/union.ts";
 import { errors } from "https://deno.land/std@0.170.0/http/http_errors.ts";
 import {
-  Redis,
+  Redis as RedisClient,
   RedisConfigDeno,
 } from "https://deno.land/x/upstash_redis@v1.18.4/mod.ts";
 import { AbstractResourceType, ResourceObject } from "../core/resource.ts";
@@ -21,14 +21,13 @@ const toScore = (x: Quantity) => x instanceof Date ? x.valueOf() : x;
 type C = { root: string; field: string };
 type T = Promise<string[]>;
 
-export class UpstashRedis extends StorageAdapter<C, T> {
-  protected redis: Redis;
-
+export class Redis extends StorageAdapter<C, T> {
+  protected redis: RedisClient;
   protected operators: ConcreteQueryOperatorRecord<C, T>;
 
   constructor(init: RedisConfigDeno) {
-    super("UpstashRedis");
-    this.redis = new Redis(init);
+    super("Upstash Redis");
+    this.redis = new RedisClient(init);
     this.operators = {
       eq: (value) => async ({ root, field }) => {
         return await this.redis.smembers(`${root}:s:${field}:${value}`) ?? [];

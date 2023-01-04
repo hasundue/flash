@@ -7,7 +7,7 @@ export type Repository = {
   query: { since?: Date; until?: Date };
 };
 
-export const repository: Resource<Repository> = ({ storage, operators }) => ({
+const repository: Resource<Repository> = ({ storage, operators }) => ({
   list: async ({ since, until }) => {
     const { gt, lt, and } = operators;
     return await storage.list({
@@ -27,3 +27,5 @@ export const repository: Resource<Repository> = ({ storage, operators }) => ({
     await storage.set({ owner, repo }, { tags, updated_at });
   },
 });
+
+export default repository;

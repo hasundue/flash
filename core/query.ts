@@ -85,11 +85,6 @@ type ConcreteInequality<Context, Result> = (
   _type?: "inequality",
 ) => Result;
 
-type ConcreteLogical<Context, Result> = (
-  context: Context,
-  _type?: "logical",
-) => Result;
-
 type ConcreteEqualityOperator<Context, Result> = (
   x: Primitive,
 ) => ConcreteEquality<Context, Result>;
@@ -100,7 +95,7 @@ type ConcreteInequalityOperator<Context, Result> = (
 
 type ConcreteLogicalOperator<C, R> = (
   ...xs: (Equality | Inequality)[]
-) => ConcreteLogical<C, R>;
+) => ConcreteEquality<C, R> & ConcreteInequality<C, R>;
 
 export type ConcreteQueryOperatorRecord<Context, Result> =
   & {

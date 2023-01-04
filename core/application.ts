@@ -1,18 +1,5 @@
-import { ConcreteQueryOperatorRecord } from "./query.ts";
-import {
-  AbstractResourceType,
-  ConcreteResourceStorage,
-  Resource,
-} from "./resource.ts";
-
-export abstract class ResourceStorageFactory<C, T> {
-  protected abstract operators: ConcreteQueryOperatorRecord<C, T>;
-
-  abstract createResourceStorage<R extends AbstractResourceType>(
-    resource: Resource<R>,
-    root: string,
-  ): ConcreteResourceStorage<R, C, T>;
-}
+import { Resource } from "./resource.ts";
+import { StorageAdapter } from "./storage.ts";
 
 export interface Application {
   resources: {
@@ -22,6 +9,6 @@ export interface Application {
       plural: string;
     };
     main: Resource<any>;
-    storage: ResourceStorageFactory<any, any>;
+    storage: StorageAdapter<any, any>;
   }[];
 }

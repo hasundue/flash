@@ -1,27 +1,19 @@
-import {
-  distinct,
-  filterValues,
-  intersect,
-  union,
-} from "https://deno.land/std@0.170.0/collections/mod.ts";
+import { filterValues } from "https://deno.land/std@0.170.0/collections/filter_values.ts";
+import { intersect } from "https://deno.land/std@0.170.0/collections/intersect.ts";
+import { union } from "https://deno.land/std@0.170.0/collections/union.ts";
 import { errors } from "https://deno.land/std@0.170.0/http/http_errors.ts";
 import {
   Redis,
   RedisConfigDeno,
 } from "https://deno.land/x/upstash_redis@v1.18.4/mod.ts";
-import {
-  AbstractResourceType,
-  ConcreteResourceStorage,
-  Resource,
-  ResourceObject,
-} from "../core/resource.ts";
+import { AbstractResourceType, ResourceObject } from "../core/resource.ts";
 import {
   ConcreteQueryOperatorRecord,
   isPrimitive,
   isQuantity,
   Quantity,
 } from "../core/query.ts";
-import { ResourceStorageFactory } from "../core/application.ts";
+import { ConcreteResourceStorage, StorageAdapter } from "../core/storage.ts";
 import { joinKeys } from "../utils/join_keys.ts";
 
 const toScore = (x: Quantity) => x instanceof Date ? x.valueOf() : x;
@@ -29,17 +21,17 @@ const toScore = (x: Quantity) => x instanceof Date ? x.valueOf() : x;
 type C = { root: string; field: string };
 type T = Promise<string[]>;
 
-export class UpstashRedis extends ResourceStorageFactory<C, T> {
+export class UpstashRedis extends StorageAdapter<C, T> {
   protected redis: Redis;
 
   protected operators: ConcreteQueryOperatorRecord<C, T>;
 
   constructor(init: RedisConfigDeno) {
-    super();
+    super("UpstashRedis");
     this.redis = new Redis(init);
     this.operators = {
       eq: (value) => async ({ root, field }) => {
-        return await this.redis.get(`${root}:s:${field}:${value}`) ?? [];
+        return await this.redis.smembers(`${root}:s:${field}:${value}`) ?? [];
       },
       gt: (value) => async ({ root, field }) => {
         const score = toScore(value);
@@ -50,18 +42,17 @@ export class UpstashRedis extends ResourceStorageFactory<C, T> {
         return await this.redis.zrange(`${root}:z:${field}`, 0, score) ?? [];
       },
       and: (...qs) => async ({ root, field }) => {
-        const kss = qs.map((it) => it({ root, field }));
+        const kss = await Promise.all(qs.map((it) => it({ root, field })));
         return intersect(kss);
       },
       or: (...qs) => async ({ root, field }) => {
-        const kss = qs.map((it) => it({ root, field }));
+        const kss = await Promise.all(qs.map((it) => it({ root, field })));
         return union(kss);
       },
     };
   }
 
   createResourceStorage<R extends AbstractResourceType>(
-    _resource: Resource<R>,
     root: string,
   ): ConcreteResourceStorage<R, C, T> {
     const joinKeyOptions = { seperator: ":", prefix: root };
@@ -81,6 +72,7 @@ export class UpstashRedis extends ResourceStorageFactory<C, T> {
 
         const pipeline = this.redis.multi();
 
+        pipeline.sadd(`${root}:k`, key);
         pipeline.hset(key, object);
 
         for (const field in filterValues(object, isPrimitive)) {
@@ -96,16 +88,18 @@ export class UpstashRedis extends ResourceStorageFactory<C, T> {
         await pipeline.exec();
       },
       list: async (query) => {
-        let hashKeys: string[] = [];
+        let keys = await this.redis.smembers(`${root}:k`);
 
         for (const field in query) {
           const condition = query[field];
           if (condition) {
-            hashKeys = hashKeys.concat(await condition({ root, field }));
+            keys = intersect(keys, await condition({ root, field }));
           }
         }
-        hashKeys = distinct(hashKeys);
-        return await this.redis.mget<ResourceObject<R>[]>(...hashKeys);
+        if (keys.length) {
+          return await this.redis.mget<ResourceObject<R>[]>(...keys);
+        }
+        return [];
       },
       set: async (spec, value) => {
         const key = joinKeys(spec, joinKeyOptions);
@@ -135,6 +129,9 @@ export class UpstashRedis extends ResourceStorageFactory<C, T> {
           }
         }
         await pipeline.exec();
+      },
+      flush: async () => {
+        await this.redis.flushdb();
       },
     };
   }

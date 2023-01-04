@@ -1,4 +1,4 @@
-import { ConcreteQuery, Query, QueryOperatorRecord } from "./query.ts";
+import { Query, QueryOperatorRecord } from "./query.ts";
 
 interface ResourceType<BodyType> {
   spec: Record<string, unknown>;
@@ -17,7 +17,7 @@ export type ResourceObject<R extends AbstractResourceType> =
   & R["spec"]
   & ResourceValue<R>;
 
-type ResourceValue<R extends AbstractResourceType> =
+export type ResourceValue<R extends AbstractResourceType> =
   & ResourceBodyRecord<R>
   & R["meta"];
 
@@ -34,20 +34,9 @@ export type Resource<
 };
 
 export interface ResourceStorage<R extends AbstractResourceType> {
-  list: (query: Query<ResourceObject<R>>) => Promise<ResourceObject<R>[]>;
+  list: (query?: Query<ResourceObject<R>>) => Promise<ResourceObject<R>[]>;
   get: (keys: R["spec"]) => Promise<ResourceObject<R>>;
   put: (keys: R["spec"], value: ResourceValue<R>) => Promise<void>;
   set: (keys: R["spec"], fields: Partial<ResourceValue<R>>) => Promise<void>;
-}
-
-export interface ConcreteResourceStorage<R extends AbstractResourceType, C, T> {
-  list: (
-    query: ConcreteQuery<ResourceObject<R>, C, T>,
-  ) => Promise<ResourceObject<R>[]>;
-  get: (keys: R["spec"]) => Promise<ResourceObject<R>>;
-  put: (keys: R["spec"], value: ResourceValue<R>) => Promise<void>;
-  set: (
-    keys: R["spec"],
-    fields: Partial<ResourceValue<R>>,
-  ) => Promise<void>;
+  flush: () => Promise<void>;
 }

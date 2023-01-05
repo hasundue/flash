@@ -8,13 +8,14 @@ import { AbstractResourceType, Resource } from "./resource.ts";
 const reader = getTypeScriptReader();
 
 export async function build(specs: Application) {
+  console.info("Building the app...");
   const app = new Hono();
 
   // TODO: Introduce type-safety
   try {
     for (const def of specs.resources) {
       const src = await Deno.readTextFile(
-        join(Deno.cwd(), def.src),
+        join(Deno.cwd(), def.source),
       );
       const schema = await reader.read(src, { warn: () => {} });
       console.debug(schema);
@@ -22,15 +23,15 @@ export async function build(specs: Application) {
       const types = schema.data.types;
       if (types.length > 1) {
         throw new Error(
-          "Multiple resource definition in a single file is not allowed",
+          "Multiple resource definitions in a single file are not allowed.",
         );
       }
       const type = types[0] as any;
       console.debug(type);
 
-      const root = "/" + def.alias.plural;
+      const root = "/" + def.alias;
       const mod = await import(
-        join(Deno.cwd(), def.src)
+        join(Deno.cwd(), def.source)
       );
       console.debug(mod);
 
@@ -56,21 +57,32 @@ export async function build(specs: Application) {
         });
       }
 
+      const params = type.properties.spec.node.properties;
+      console.debug(params);
+
       let path = root;
+      Object.keys(params).forEach((it) => path += `/:${it}`);
 
-      const params = Object.keys(type.properties.spec.node.properties);
-      console.log(params);
+      if (methods.put) {
+        app.put(path, async (ctx) => {
+          const keys = mapEntries(params, ([key]) => [
+            key,
+            ctx.req.param(key),
+          ]);
+          console.debug(keys);
 
-      params.forEach((it) => path += `/:${it}`);
+          const body = await ctx.req.json();
+          console.debug(body);
 
-      // app.get(path, (ctx) => {
-      //   return ctx.text("hello");
-      // });
+          await methods.put!(keys, body);
+          return ctx.json(null, 201);
+        });
+      }
     }
   } catch (e) {
-    throw new Error("Invalid resource definition", { cause: e });
+    throw new Error("Invalid resource definition.", { cause: e });
   }
-  console.log(app);
+  console.debug(app);
 
   return app;
 }

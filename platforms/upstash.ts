@@ -63,7 +63,7 @@ export class Redis extends StorageAdapter<C, T> {
   createResourceStorage<R extends AbstractResourceType>(
     root: string,
   ): ConcreteResourceStorage<R, C, T> {
-    const joinKeyOptions = { seperator: ":", prefix: root };
+    const joinKeyOptions = { seperator: "/", prefix: root };
 
     return {
       get: async (spec) => {

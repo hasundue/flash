@@ -27,7 +27,7 @@ export type Resource<
   storage: ResourceStorage<R>;
   operators: QueryOperatorRecord;
 }) => {
-  list?: (query?: R["query"]) => Promise<ResourceObject<R>[]>;
+  list?: (query: R["query"]) => Promise<ResourceObject<R>[]>;
   get?: (keys: R["spec"]) => Promise<ResourceObject<R>>;
   put?: (keys: R["spec"], body: R["body"]) => Promise<void>;
   set?: (keys: R["spec"], body: Partial<R["body"]>) => Promise<void>;

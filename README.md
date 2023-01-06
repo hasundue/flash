@@ -3,7 +3,7 @@
 ![ci](https://github.com/hasundue/flash/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/hasundue/flash/branch/main/graph/badge.svg?token=DRMQQ7ICNB)](https://codecov.io/gh/hasundue/flash)
 
-`flash` is a resource-oriented abstraction layer for serverless platforms, with
+`flash` is a resource-oriented abstraction layer for Hono and various serverless platforms, with
 a flavor of functional programming paradigm.
 
 > **Warning**\
@@ -18,9 +18,6 @@ a flavor of functional programming paradigm.
 - Storage
   - [x] Upstash Redis
   - [ ] Supabase
-- Web Frameworks
-  - [x] Hono
-  - [ ] Oak
 
 ## Examples
 

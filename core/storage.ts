@@ -84,6 +84,8 @@ export abstract class StorageAdapter<C, T> {
       });
 
       await t.step("list", async (t) => {
+        const started = Date.now();
+
         await storage.put({ owner, repo: "example" }, {
           tags: ["test"],
           created_at: Date.now(),
@@ -150,6 +152,14 @@ export abstract class StorageAdapter<C, T> {
           const now = Date.now();
           const result = await storage.list({ created_at: gt(now) });
           assertEquals(result.length, 0);
+        });
+
+        await t.step("started < created_at < now (1)", async () => {
+          const now = Date.now();
+          const result = await storage.list({
+            created_at: and(gt(started), lt(now)),
+          });
+          assertEquals(result.length, 1);
         });
       });
     });

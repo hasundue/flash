@@ -32,16 +32,13 @@ type TestResource = {
 };
 
 export abstract class StorageAdapter<C, T> {
-  protected name: string;
-  abstract operators: ConcreteQueryOperatorRecord<C, T>;
-
-  abstract createResourceStorage<R extends AbstractResourceType>(
-    root: string,
-  ): ConcreteResourceStorage<R, C, T>;
-
-  constructor(name: string) {
-    this.name = name;
-  }
+  constructor(
+    protected name: string,
+    public operators: ConcreteQueryOperatorRecord<C, T>,
+    public createResourceStorage: <R extends AbstractResourceType>(
+      root: string,
+    ) => ConcreteResourceStorage<R, C, T>,
+  ) {}
 
   test() {
     Deno.test(this.name, async (t) => {

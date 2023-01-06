@@ -3,8 +3,8 @@
 ![ci](https://github.com/hasundue/flash/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/hasundue/flash/branch/main/graph/badge.svg?token=DRMQQ7ICNB)](https://codecov.io/gh/hasundue/flash)
 
-`flash` is a resource-oriented abstraction layer for Hono and various serverless platforms, with
-a flavor of functional programming paradigm.
+`flash` is a resource-oriented abstraction layer for Hono and various serverless
+platforms, with a flavor of functional programming paradigm.
 
 > **Warning**\
 > Nothing to do with the Deno's new HTTP server with the same name. This is my

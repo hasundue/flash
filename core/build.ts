@@ -1,5 +1,5 @@
 import { mapEntries } from "https://deno.land/std@0.170.0/collections/map_entries.ts";
-import { join } from "https://deno.land/std@0.170.0/path/mod.ts";
+import { dirname, join } from "https://deno.land/std@0.170.0/path/mod.ts";
 import { Hono } from "https://deno.land/x/hono@v2.1.4/mod.ts";
 import { getTypeScriptReader } from "https://esm.sh/typeconv@1.8.0";
 import { Application } from "./application.ts";
@@ -7,17 +7,22 @@ import { AbstractResourceType, Resource } from "./resource.ts";
 
 const reader = getTypeScriptReader();
 
-export async function build(specs: Application) {
+export async function build(source: string) {
   console.info("Building the app...");
   const app = new Hono();
 
   // TODO: Introduce type-safety
   try {
+    const mod = await import(join(Deno.cwd(), source));
+    const specs = mod.default as Application;
+    console.debug(specs);
+
     for (const def of specs.resources) {
-      const src = await Deno.readTextFile(
-        join(Deno.cwd(), def.source),
-      );
-      const schema = await reader.read(src, { warn: () => {} });
+      const file = join(Deno.cwd(), dirname(source), def.source);
+      console.debug(file);
+
+      const contents = await Deno.readTextFile(file);
+      const schema = await reader.read(contents, { warn: () => {} });
       console.debug(schema);
 
       const types = schema.data.types;
@@ -29,10 +34,8 @@ export async function build(specs: Application) {
       const type = types[0] as any;
       console.debug(type);
 
-      const root = "/" + def.alias;
-      const mod = await import(
-        join(Deno.cwd(), def.source)
-      );
+      const root = "/" + def.alias.plural;
+      const mod = await import(file);
       console.debug(mod);
 
       const fn: Resource<AbstractResourceType> = mod.default;

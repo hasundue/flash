@@ -1,4 +1,4 @@
-import { Resource } from "../../core/resource.ts";
+import { Resource } from "../../mod.ts";
 
 export type Repository = {
   spec: { owner: string; repo: string };

@@ -146,3 +146,5 @@ export abstract class StorageAdapter<C, T> {
     });
   }
 }
+
+export type AbstractStorageAdapter = StorageAdapter<any, any>;

@@ -1,7 +1,6 @@
-// import { serve } from "https://deno.land/std@0.170.0/http/server.ts";
 import { load } from "https://deno.land/std@0.170.0/dotenv/mod.ts";
+import { Application } from "../mod.ts";
 import { Redis } from "../platforms/upstash.ts";
-import { build } from "../core/build.ts";
 
 const env = await load();
 
@@ -10,12 +9,14 @@ const redis = new Redis({
   token: env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-export const app = await build({
+const app: Application = {
   resources: [
     {
-      alias: "repos",
+      alias: { singular: "repo", plural: "repos" },
       source: "./resources/repository.ts",
       storage: redis,
     },
   ],
-});
+};
+
+export default app;

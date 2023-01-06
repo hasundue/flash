@@ -1,5 +1,7 @@
 import { assertEquals } from "https://deno.land/std@0.170.0/testing/asserts.ts";
-import { app } from "./deploy.ts";
+import { build } from "../mod.ts";
+
+const app = await build("./deploy.ts");
 
 const host = "http://localhost:8000";
 

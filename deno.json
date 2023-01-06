@@ -1,9 +1,5 @@
 {
   "tasks": {
-    "dev": "denoflare serve examples/worker.ts --do-namespace-binding storage:local:WorkerStorage",
-    "test": "deno test --allow-read --allow-net --allow-env --no-check",
-    "unit": "deno task test modules/",
-    "integration": "deno task test integration/",
-    "ci": "deno fmt && deno lint && deno task unit --fail-fast && deno task integration --fail-fast"
+    "test": "deno test -A --no-check"
   }
 }

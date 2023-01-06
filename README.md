@@ -19,6 +19,6 @@ a flavor of functional programming paradigm.
   - [x] Upstash Redis
   - [ ] Supabase
 
-## Examples
+## Example
 
-WIP
+See [./example](./example)

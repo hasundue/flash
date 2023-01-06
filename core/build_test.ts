@@ -1,10 +1,13 @@
-import { assertEquals } from "https://deno.land/std@0.170.0/testing/asserts.ts";
+import {
+  assertEquals,
+  assertObjectMatch,
+} from "https://deno.land/std@0.170.0/testing/asserts.ts";
 import { build } from "./build.ts";
 
 const host = "http://localhost:8000";
 
 Deno.test("Deno Deploy", async (t) => {
-  const app = await build("./example/deploy.ts");
+  const app = await build("./example/app.ts");
 
   await t.step("put", async () => {
     const res = await app.request(host + "/repos/hasundue/flash", {
@@ -18,6 +21,11 @@ Deno.test("Deno Deploy", async (t) => {
       method: "GET",
     });
     assertEquals(res.status, 200);
-    console.log(await res.json());
+
+    const json = await res.json();
+    assertObjectMatch(
+      json,
+      { owner: "hasundue", repo: "flash", tags: ["test"] },
+    );
   });
 });

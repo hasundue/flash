@@ -1,7 +1,9 @@
 name: test
 
 on:
-  pull_request_target:
+  pull_request:
+    branches:
+      - main
   workflow_call:
 
 jobs:
@@ -10,17 +12,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup Deno
         uses: denoland/setup-deno@v1
         with:
-          deno-version: v1.x
-
-      - name: Install Denoflare
-        run: >
-          deno install -A --unstable --name denoflare --force 
-          https://raw.githubusercontent.com/skymethod/denoflare/v0.5.8/cli/cli.ts
+          deno-version: v1.29.2 # @denopendabot denoland/deno
 
       - name: Format
         run: deno fmt --check
@@ -29,7 +26,7 @@ jobs:
         run: deno lint
 
       - name: Test
-        run: deno task test --coverage=coverage modules/ integration/
+        run: deno task test -q --coverage=coverage utils/ core/ platforms/
 
       - name: Create coverage report
         run: deno coverage ./coverage --lcov > coverage.lcov
@@ -38,4 +35,3 @@ jobs:
         uses: codecov/codecov-action@v1
         with:
           file: ./coverage.lcov
-          fail_ci_if_error: true

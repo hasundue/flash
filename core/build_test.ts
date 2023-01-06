@@ -1,7 +1,7 @@
 import {
   assertEquals,
   assertObjectMatch,
-} from "https://deno.land/std@0.170.0/testing/asserts.ts";
+} from "https://deno.land/std@0.171.0/testing/asserts.ts";
 import { build } from "./build.ts";
 
 const host = "http://localhost:8000";

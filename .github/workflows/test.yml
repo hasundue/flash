@@ -27,6 +27,9 @@ jobs:
 
       - name: Test
         run: deno task test -q --coverage=coverage utils/ core/ platforms/
+        env:
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
 
       - name: Create coverage report
         run: deno coverage ./coverage --lcov > coverage.lcov

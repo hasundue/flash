@@ -2,7 +2,7 @@ import { load } from "https://deno.land/std@0.170.0/dotenv/mod.ts";
 import { Application } from "../mod.ts";
 import { Redis } from "../platforms/upstash.ts";
 
-const env = await load();
+const env = Deno.env.get("CI") ? Deno.env.toObject() : await load();
 
 const redis = new Redis({
   url: env.UPSTASH_REDIS_REST_URL,

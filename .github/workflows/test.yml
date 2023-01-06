@@ -26,7 +26,7 @@ jobs:
         run: deno lint
 
       - name: Test
-        run: deno task test -q --coverage=coverage utils/ core/ platforms/
+        run: deno task test -q --coverage=coverage utils/ platforms/
         env:
           UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
           UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}

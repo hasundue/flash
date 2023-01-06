@@ -40,22 +40,30 @@ export class Redis extends StorageAdapter<C, T> {
           return await this.redis.smembers(`${root}:k`);
         }
         const score = toScore(value);
-        return await this.redis.zrange(`${root}:z:${field}`, score, -1) ?? [];
+        return await this.redis.zrange(`${root}:z:${field}`, score, "+inf", {
+          byScore: true,
+        }) ?? [];
       },
       lt: (value) => async ({ root, field }) => {
         if (!value) {
           return await this.redis.smembers(`${root}:k`);
         }
         const score = toScore(value);
-        return await this.redis.zrange(`${root}:z:${field}`, 0, score) ?? [];
+        return await this.redis.zrange(`${root}:z:${field}`, "-inf", score, {
+          byScore: true,
+        }) ?? [];
       },
       and: (...qs) => async ({ root, field }) => {
-        const kss = await Promise.all(qs.map((it) => it({ root, field })));
-        return intersect(kss);
+        const kss: string[][] = await Promise.all(
+          qs.map((it) => it({ root, field })),
+        );
+        return intersect(...kss);
       },
       or: (...qs) => async ({ root, field }) => {
-        const kss = await Promise.all(qs.map((it) => it({ root, field })));
-        return union(kss);
+        const kss: string[][] = await Promise.all(
+          qs.map((it) => it({ root, field })),
+        );
+        return union(...kss);
       },
     };
   }
@@ -101,11 +109,14 @@ export class Redis extends StorageAdapter<C, T> {
         for (const field in query) {
           const condition = query[field];
           if (condition) {
-            keys = intersect(keys, await condition({ root, field }));
+            const value = await condition({ root, field });
+            keys = intersect(keys, value);
           }
         }
         if (keys.length) {
-          return await this.redis.mget<ResourceObject<R>[]>(...keys);
+          const pipeline = this.redis.multi();
+          keys.forEach((it) => pipeline.hgetall<ResourceObject<R>>(it));
+          return await pipeline.exec();
         }
         return [];
       },

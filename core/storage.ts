@@ -92,6 +92,15 @@ export abstract class StorageAdapter<C, T> {
         await t.step("ALL (2)", async () => {
           const result = await storage.list();
           assertEquals(result.length, 2);
+
+          assertObjectMatch(
+            result[1],
+            { owner, repo: "example" },
+          );
+          assertObjectMatch(
+            result[0],
+            { owner, repo },
+          );
         });
 
         await t.step("owner = hasundue (2)", async () => {
@@ -128,7 +137,7 @@ export abstract class StorageAdapter<C, T> {
           const result = await storage.list({
             owner: or(eq("hasundue"), eq("denoland")),
           });
-          assertEquals(result.length, 0);
+          assertEquals(result.length, 2);
         });
 
         await t.step("created_at < now (2)", async () => {

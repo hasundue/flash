@@ -53,7 +53,7 @@ export async function build(source: string) {
         app.get(root, async (ctx) => {
           const query = mapEntries(params, ([key]) => [
             key,
-            ctx.req.query(key),
+            ctx.req.query(key) ?? undefined,
           ]);
           const vals = await methods.list!(query);
           return ctx.json(vals);
@@ -70,14 +70,9 @@ export async function build(source: string) {
         app.put(path, async (ctx) => {
           const keys = mapEntries(params, ([key]) => [
             key,
-            ctx.req.param(key),
+            ctx.req.param(key) ?? undefined,
           ]);
-          console.debug(keys);
-
-          const body = await ctx.req.json();
-          console.debug(body);
-
-          await methods.put!(keys, body);
+          await methods.put!(keys, await ctx.req.json());
           return ctx.json(null, 201);
         });
       }

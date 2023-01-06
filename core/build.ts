@@ -11,19 +11,16 @@ export async function build(source: string) {
   console.info("Building the app...");
   const app = new Hono();
 
-  // TODO: Introduce type-safety
+  // TODO: introduce type-safety
   try {
     const mod = await import(join(Deno.cwd(), source));
     const specs = mod.default as Application;
-    console.debug(specs);
 
     for (const def of specs.resources) {
       const file = join(Deno.cwd(), dirname(source), def.source);
-      console.debug(file);
 
       const contents = await Deno.readTextFile(file);
       const schema = await reader.read(contents, { warn: () => {} });
-      console.debug(schema);
 
       const types = schema.data.types;
       if (types.length > 1) {
@@ -32,11 +29,9 @@ export async function build(source: string) {
         );
       }
       const type = types[0] as any;
-      console.debug(type);
 
       const root = "/" + def.alias.plural;
       const mod = await import(file);
-      console.debug(mod);
 
       const fn: Resource<AbstractResourceType> = mod.default;
 
@@ -48,7 +43,6 @@ export async function build(source: string) {
 
       if (methods.list) {
         const params = type.properties.query.node.properties;
-        console.debug(params);
 
         app.get(root, async (ctx) => {
           const query = mapEntries(params, ([key]) => [
@@ -56,15 +50,25 @@ export async function build(source: string) {
             ctx.req.query(key) ?? undefined,
           ]);
           const vals = await methods.list!(query);
-          return ctx.json(vals);
+          return ctx.json(vals, 200);
         });
       }
 
       const params = type.properties.spec.node.properties;
-      console.debug(params);
 
       let path = root;
       Object.keys(params).forEach((it) => path += `/:${it}`);
+
+      if (methods.get) {
+        app.put(path, async (ctx) => {
+          const keys = mapEntries(params, ([key]) => [
+            key,
+            ctx.req.param(key) ?? undefined,
+          ]);
+          await methods.get!(keys);
+          return ctx.json(null, 200);
+        });
+      }
 
       if (methods.put) {
         app.put(path, async (ctx) => {
@@ -72,15 +76,27 @@ export async function build(source: string) {
             key,
             ctx.req.param(key) ?? undefined,
           ]);
+          // TODO: validate the body
           await methods.put!(keys, await ctx.req.json());
-          return ctx.json(null, 201);
+          return ctx.json(null, 204);
+        });
+      }
+
+      if (methods.set) {
+        app.put(path, async (ctx) => {
+          const keys = mapEntries(params, ([key]) => [
+            key,
+            ctx.req.param(key) ?? undefined,
+          ]);
+          // TODO: validate the body
+          await methods.set!(keys, await ctx.req.json());
+          return ctx.json(null, 204);
         });
       }
     }
   } catch (e) {
     throw new Error("Invalid resource definition.", { cause: e });
   }
-  console.debug(app);
 
   return app;
 }

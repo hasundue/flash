@@ -1,11 +1,11 @@
-import { filterValues } from "https://deno.land/std@0.171.0/collections/filter_values.ts";
-import { intersect } from "https://deno.land/std@0.171.0/collections/intersect.ts";
-import { union } from "https://deno.land/std@0.171.0/collections/union.ts";
-import { errors } from "https://deno.land/std@0.171.0/http/http_errors.ts";
+import { filterValues } from "https://deno.land/std@0.178.0/collections/filter_values.ts";
+import { intersect } from "https://deno.land/std@0.178.0/collections/intersect.ts";
+import { union } from "https://deno.land/std@0.178.0/collections/union.ts";
+import { errors } from "https://deno.land/std@0.178.0/http/http_errors.ts";
 import {
   Redis as RedisClient,
   RedisConfigDeno,
-} from "https://deno.land/x/upstash_redis@v1.19.1/mod.ts";
+} from "https://deno.land/x/upstash_redis@v1.20.1/mod.ts";
 import { AbstractResourceType, ResourceObject } from "../core/resource.ts";
 import {
   ConcreteQueryOperatorRecord,

@@ -18,6 +18,9 @@ platforms, with a flavor of functional programming paradigm.
 - Storage
   - [x] Upstash Redis
   - [ ] Supabase
+  - [ ] Cloudflare Workers KV
+  - [ ] Cloudflare R2
+  - [ ] Cloudflare D1
 
 ## Example
 

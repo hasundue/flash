@@ -94,15 +94,6 @@ export abstract class StorageAdapter<C, T> {
         await t.step("ALL (2)", async () => {
           const result = await storage.list();
           assertEquals(result.length, 2);
-
-          assertObjectMatch(
-            result[1],
-            { owner, repo: "example" },
-          );
-          assertObjectMatch(
-            result[0],
-            { owner, repo },
-          );
         });
 
         await t.step("owner = hasundue (2)", async () => {

@@ -2,7 +2,7 @@ import {
   assert,
   assertEquals,
   assertObjectMatch,
-} from "https://deno.land/std@0.178.0/testing/asserts.ts";
+} from "https://deno.land/std@0.179.0/testing/asserts.ts";
 import { ConcreteQuery, ConcreteQueryOperatorRecord } from "./query.ts";
 import {
   AbstractResourceType,

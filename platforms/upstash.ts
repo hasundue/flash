@@ -5,7 +5,7 @@ import { errors } from "https://deno.land/std@0.184.0/http/http_errors.ts";
 import {
   Redis as RedisClient,
   RedisConfigDeno,
-} from "https://deno.land/x/upstash_redis@v1.20.3/mod.ts";
+} from "https://deno.land/x/upstash_redis@v1.20.4/mod.ts";
 import { AbstractResourceType, ResourceObject } from "../core/resource.ts";
 import {
   ConcreteQueryOperatorRecord,

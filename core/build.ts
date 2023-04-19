@@ -1,5 +1,5 @@
-import { mapEntries } from "https://deno.land/std@0.183.0/collections/map_entries.ts";
-import { dirname, join } from "https://deno.land/std@0.183.0/path/mod.ts";
+import { mapEntries } from "https://deno.land/std@0.184.0/collections/map_entries.ts";
+import { dirname, join } from "https://deno.land/std@0.184.0/path/mod.ts";
 import { Hono } from "https://deno.land/x/hono@v3.1.6/mod.ts";
 import { getTypeScriptReader } from "https://esm.sh/typeconv@2.3.0/";
 import { Application } from "./application.ts";

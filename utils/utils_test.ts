@@ -1,5 +1,5 @@
-import { assertEquals } from "https://deno.land/std@0.192.0/testing/asserts.ts";
-import { describe } from "https://deno.land/std@0.192.0/testing/bdd.ts";
+import { assertEquals } from "https://deno.land/std@0.193.0/testing/asserts.ts";
+import { describe } from "https://deno.land/std@0.193.0/testing/bdd.ts";
 import { joinKeys } from "./join_keys.ts";
 
 describe("joinKeys", () => {

@@ -1,7 +1,7 @@
-import { filterValues } from "https://deno.land/std@0.201.0/collections/filter_values.ts";
-import { intersect } from "https://deno.land/std@0.201.0/collections/intersect.ts";
-import { union } from "https://deno.land/std@0.201.0/collections/union.ts";
-import { errors } from "https://deno.land/std@0.201.0/http/http_errors.ts";
+import { filterValues } from "https://deno.land/std@0.202.0/collections/filter_values.ts";
+import { intersect } from "https://deno.land/std@0.202.0/collections/intersect.ts";
+import { union } from "https://deno.land/std@0.202.0/collections/union.ts";
+import { errors } from "https://deno.land/std@0.202.0/http/http_errors.ts";
 import {
   Redis as RedisClient,
   RedisConfigDeno,
